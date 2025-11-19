@@ -11,7 +11,8 @@ import { CreditCard, Smartphone, Banknote, Wallet } from 'lucide-react';
 
 const Pagamento = () => {
   const navigate = useNavigate();
-  const { total, items } = useCart();
+  const { items, deliveryFee } = useCart();
+  const total = items.reduce((sum, item) => sum + item.preco * item.quantidade, 0);
   const [metodoPagamento, setMetodoPagamento] = useState('');
   const [troco, setTroco] = useState('');
 
@@ -32,9 +33,6 @@ const Pagamento = () => {
     localStorage.setItem('ultimoPedido', JSON.stringify(pedido));
     navigate('/confirmacao');
   };
-
-  const taxaEntrega = 5.00;
-  const totalFinal = total + taxaEntrega;
 
   return (
     <div className="min-h-screen">
@@ -132,12 +130,12 @@ const Pagamento = () => {
                   </div>
                   <div className="flex justify-between">
                     <span>Taxa de entrega</span>
-                    <span>R$ {taxaEntrega.toFixed(2)}</span>
+                    <span>R$ {deliveryFee.toFixed(2)}</span>
                   </div>
                   <div className="border-t pt-2">
                     <div className="flex justify-between text-xl font-bold">
                       <span>Total</span>
-                      <span className="text-accent">R$ {totalFinal.toFixed(2)}</span>
+                      <span className="text-accent">R$ {(total + deliveryFee).toFixed(2)}</span>
                     </div>
                   </div>
                 </div>

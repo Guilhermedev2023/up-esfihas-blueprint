@@ -1,13 +1,26 @@
 import { Header } from '@/components/Header';
 import { Button } from '@/components/ui/button';
 import { useCart } from '@/contexts/CartContext';
+import { useAuth } from '@/contexts/AuthContext';
+import { getDeliveryFee } from '@/utils/deliveryFees';
 import { useNavigate } from 'react-router-dom';
+import { useEffect } from 'react';
 import { Plus, Minus, Trash2, ShoppingBag } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 
 const Carrinho = () => {
-  const { items, updateQuantity, removeFromCart, clearCart, total } = useCart();
+  const { items, updateQuantity, removeFromCart, clearCart, total, deliveryFee, setDeliveryFee } = useCart();
+  const { user } = useAuth();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (user && 'bairro' in user) {
+      const fee = getDeliveryFee((user as any).bairro);
+      if (fee !== null) {
+        setDeliveryFee(fee);
+      }
+    }
+  }, [user, setDeliveryFee]);
 
   if (items.length === 0) {
     return (
@@ -126,14 +139,21 @@ const Carrinho = () => {
                     <span>Subtotal</span>
                     <span>R$ {total.toFixed(2)}</span>
                   </div>
-                  <div className="flex justify-between text-sm text-muted-foreground">
-                    <span>Taxa de entrega</span>
-                    <span>A calcular</span>
-                  </div>
+                  {deliveryFee > 0 ? (
+                    <div className="flex justify-between">
+                      <span>Taxa de entrega</span>
+                      <span>R$ {deliveryFee.toFixed(2)}</span>
+                    </div>
+                  ) : (
+                    <div className="flex justify-between text-sm text-muted-foreground">
+                      <span>Taxa de entrega</span>
+                      <span>A calcular</span>
+                    </div>
+                  )}
                   <div className="my-4 border-t pt-4">
                     <div className="flex justify-between text-xl font-bold">
                       <span>Total</span>
-                      <span className="text-accent">R$ {total.toFixed(2)}</span>
+                      <span className="text-accent">R$ {(total + deliveryFee).toFixed(2)}</span>
                     </div>
                   </div>
                 </div>
