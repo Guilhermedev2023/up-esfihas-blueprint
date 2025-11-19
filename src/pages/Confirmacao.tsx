@@ -8,8 +8,9 @@ import { CheckCircle, Clock } from 'lucide-react';
 
 const Confirmacao = () => {
   const navigate = useNavigate();
-  const { clearCart } = useCart();
+  const { items, clearCart, deliveryFee } = useCart();
   const [pedido, setPedido] = useState<any>(null);
+  const total = items.reduce((sum, item) => sum + item.preco * item.quantidade, 0);
 
   useEffect(() => {
     const ultimoPedido = localStorage.getItem('ultimoPedido');
@@ -65,9 +66,17 @@ const Confirmacao = () => {
                     </div>
                   ))}
                   <div className="border-t pt-2">
-                    <div className="flex justify-between font-bold">
+                    <div className="flex justify-between">
+                      <span>Subtotal</span>
+                      <span>R$ {pedido.total.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Taxa de entrega</span>
+                      <span>R$ {deliveryFee.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between font-bold border-t pt-2 mt-2">
                       <span>Total</span>
-                      <span className="text-accent">R$ {(pedido.total + 5).toFixed(2)}</span>
+                      <span className="text-accent">R$ {(pedido.total + deliveryFee).toFixed(2)}</span>
                     </div>
                   </div>
                 </div>

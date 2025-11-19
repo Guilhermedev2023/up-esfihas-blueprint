@@ -13,9 +13,21 @@ const Cadastro = () => {
     nome: '',
     telefone: '',
     email: '',
+    endereco: '',
+    bairro: '',
     senha: '',
     confirmarSenha: ''
   });
+
+  const bairrosDisponiveis = [
+    'Cachoeira',
+    'Ponta das Canas',
+    'Ingleses',
+    'Canasvieiras',
+    'Jurerê',
+    'Vargem Grande'
+  ];
+
   const [aceitoTermos, setAceitoTermos] = useState(false);
   const [loading, setLoading] = useState(false);
   const { register } = useAuth();
@@ -28,6 +40,16 @@ const Cadastro = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!formData.endereco) {
+      toast.error('O endereço é obrigatório');
+      return;
+    }
+
+    if (!formData.bairro) {
+      toast.error('Selecione um bairro');
+      return;
+    }
 
     if (formData.senha.length < 6) {
       toast.error('A senha deve ter no mínimo 6 caracteres');
@@ -50,6 +72,8 @@ const Cadastro = () => {
       nome: formData.nome,
       email: formData.email,
       telefone: formData.telefone,
+      endereco: formData.endereco,
+      bairro: formData.bairro,
       senha: formData.senha
     });
 
@@ -93,6 +117,35 @@ const Cadastro = () => {
                 onChange={handleChange}
                 required
               />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="endereco">Endereço completo</Label>
+              <Input
+                id="endereco"
+                name="endereco"
+                placeholder="Rua, número, complemento"
+                value={formData.endereco}
+                onChange={handleChange}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="bairro">Bairro</Label>
+              <select
+                id="bairro"
+                name="bairro"
+                value={formData.bairro}
+                onChange={handleChange as any}
+                required
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              >
+                <option value="">Selecione seu bairro</option>
+                {bairrosDisponiveis.map((bairro) => (
+                  <option key={bairro} value={bairro}>
+                    {bairro}
+                  </option>
+                ))}
+              </select>
             </div>
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>

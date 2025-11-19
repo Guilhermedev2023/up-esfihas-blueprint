@@ -14,12 +14,15 @@ interface CartContextType {
   clearCart: () => void;
   total: number;
   itemCount: number;
+  deliveryFee: number;
+  setDeliveryFee: (fee: number) => void;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [items, setItems] = useState<CartItem[]>([]);
+  const [deliveryFee, setDeliveryFee] = useState<number>(0);
 
   useEffect(() => {
     const storedCart = localStorage.getItem('cart');
@@ -70,6 +73,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const clearCart = () => {
     setItems([]);
+    setDeliveryFee(0);
     localStorage.removeItem('cart');
   };
 
@@ -77,7 +81,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const itemCount = items.reduce((sum, item) => sum + item.quantidade, 0);
 
   return (
-    <CartContext.Provider value={{ items, addToCart, removeFromCart, updateQuantity, clearCart, total, itemCount }}>
+    <CartContext.Provider value={{ items, addToCart, removeFromCart, updateQuantity, clearCart, total, itemCount, deliveryFee, setDeliveryFee }}>
       {children}
     </CartContext.Provider>
   );

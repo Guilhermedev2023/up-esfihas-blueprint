@@ -21,6 +21,8 @@ interface RegisterData {
   nome: string;
   email: string;
   telefone: string;
+  endereco: string;
+  bairro: string;
   senha: string;
 }
 

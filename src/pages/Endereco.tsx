@@ -6,9 +6,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
+import { getDeliveryFee } from '@/utils/deliveryFees';
+import { useCart } from '@/contexts/CartContext';
 
 const Endereco = () => {
   const navigate = useNavigate();
+  const { setDeliveryFee } = useCart();
   const [formData, setFormData] = useState({
     nome: '',
     cep: '',
@@ -62,6 +65,14 @@ const Endereco = () => {
       return;
     }
 
+    const fee = getDeliveryFee(formData.bairro);
+    
+    if (fee === null) {
+      toast.error('Infelizmente ainda não entregamos nessa região.');
+      return;
+    }
+
+    setDeliveryFee(fee);
     localStorage.setItem('endereco', JSON.stringify(formData));
     navigate('/pagamento');
   };

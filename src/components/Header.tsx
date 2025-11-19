@@ -19,8 +19,9 @@ export const Header = () => {
     <header className="sticky top-0 z-50 w-full bg-primary shadow-md">
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
         <Link to="/home" className="flex items-center gap-2">
+          <img src="/images/logo.jpg" alt="UP Esfihas Artesanais" className="h-12 w-12 rounded-full object-cover" />
           <h1 className="text-xl font-bold text-primary-foreground sm:text-2xl">
-            UP Esfihas Artesanais
+            UP ESFIHAS
           </h1>
         </Link>
 
