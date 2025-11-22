@@ -4,19 +4,14 @@ import { useCart } from '@/contexts/CartContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { getDeliveryFee } from '@/utils/deliveryFees';
 import { useNavigate } from 'react-router-dom';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { Plus, Minus, Trash2, ShoppingBag } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Label } from '@/components/ui/label';
-import { getPaymentLink, whatsappUrl } from '@/utils/paymentLinks';
-import { toast } from 'sonner';
 
 const Carrinho = () => {
   const { items, updateQuantity, removeFromCart, clearCart, total, deliveryFee, setDeliveryFee } = useCart();
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [paymentMethod, setPaymentMethod] = useState<'online' | 'entrega'>('online');
 
   useEffect(() => {
     if (user && 'bairro' in user) {
@@ -163,49 +158,13 @@ const Carrinho = () => {
                   </div>
                 </div>
 
-                <div className="mt-6 space-y-4">
-                  <div className="space-y-3">
-                    <Label className="text-base font-semibold">Forma de Pagamento</Label>
-                    <RadioGroup value={paymentMethod} onValueChange={(value) => setPaymentMethod(value as 'online' | 'entrega')}>
-                      <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="online" id="online" />
-                        <Label htmlFor="online" className="font-normal cursor-pointer">Pagar Online</Label>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="entrega" id="entrega" />
-                        <Label htmlFor="entrega" className="font-normal cursor-pointer">Pagar na Entrega</Label>
-                      </div>
-                    </RadioGroup>
-                  </div>
-
-                  <Button
-                    onClick={() => {
-                      if (paymentMethod === 'online') {
-                        // Verificar se há apenas um item no carrinho
-                        if (items.length === 1) {
-                          const item = items[0];
-                          const paymentLink = getPaymentLink(item.nome);
-                          
-                          if (paymentLink) {
-                            // Redirecionar para o link de pagamento
-                            window.location.href = paymentLink;
-                          } else {
-                            toast.error('Link de pagamento não encontrado para este produto. Entre em contato conosco.');
-                          }
-                        } else {
-                          toast.error('Por favor, adicione apenas um produto ao carrinho para pagamento online.');
-                        }
-                      } else {
-                        // Redirecionar para WhatsApp
-                        window.location.href = whatsappUrl;
-                      }
-                    }}
-                    className="w-full"
-                    size="lg"
-                  >
-                    Continuar
-                  </Button>
-                </div>
+                <Button
+                  onClick={() => navigate('/pagamento')}
+                  className="mt-6 w-full"
+                  size="lg"
+                >
+                  Continuar para Pagamento
+                </Button>
               </CardContent>
             </Card>
           </div>

@@ -5,53 +5,83 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
 import { useCart } from '@/contexts/CartContext';
-import { CreditCard, Smartphone, Banknote, Wallet } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { QrCode, Truck, Copy, CheckCircle2 } from 'lucide-react';
+import { generateWhatsAppMessage, sendToWhatsApp } from '@/utils/whatsappMessage';
+import { toast } from 'sonner';
+
+const pixCode = '00020126740014BR.GOV.BCB.PIX0114436060510001740234linknabio.gg/christopher-rubin-6235204000053039865802BR5921CHRISTOPHER-RUBIN-6236009SAO PAULO62070503***6304CFF6';
 
 const Pagamento = () => {
   const navigate = useNavigate();
   const { items, deliveryFee } = useCart();
+  const { user } = useAuth();
   const total = items.reduce((sum, item) => sum + item.preco * item.quantidade, 0);
-  const [metodoPagamento, setMetodoPagamento] = useState('');
-  const [troco, setTroco] = useState('');
+  const totalComTaxa = total + deliveryFee;
+  const [metodoPagamento, setMetodoPagamento] = useState<'pix' | 'entrega' | ''>('');
+  const [pixCopiado, setPixCopiado] = useState(false);
 
-  const handleSubmit = () => {
+  const handleCopyPixCode = () => {
+    navigator.clipboard.writeText(pixCode);
+    setPixCopiado(true);
+    toast.success('Código PIX copiado!');
+    setTimeout(() => setPixCopiado(false), 3000);
+  };
+
+  const handleFinalizarPedido = () => {
     if (!metodoPagamento) {
+      toast.error('Selecione uma forma de pagamento');
       return;
     }
 
-    const pedido = {
-      numero: Math.floor(Math.random() * 10000),
+    if (!user) {
+      toast.error('Dados do usuário incompletos');
+      return;
+    }
+
+    // Buscar dados completos do localStorage
+    const users = JSON.parse(localStorage.getItem('users') || '[]');
+    const fullUserData = users.find((u: any) => u.email === user.email);
+
+    if (!fullUserData || !fullUserData.endereco || !fullUserData.bairro) {
+      toast.error('Dados de endereço incompletos. Por favor, complete seu cadastro.');
+      return;
+    }
+
+    const orderDetails = {
+      nome: user.nome,
+      telefone: user.telefone,
+      endereco: fullUserData.endereco,
+      bairro: fullUserData.bairro,
       items,
-      total,
-      metodoPagamento,
-      troco: metodoPagamento === 'dinheiro' ? troco : null,
-      data: new Date().toISOString()
+      total: totalComTaxa,
+      metodoPagamento
     };
 
-    localStorage.setItem('ultimoPedido', JSON.stringify(pedido));
-    navigate('/confirmacao');
+    const message = generateWhatsAppMessage(orderDetails);
+    sendToWhatsApp(message);
   };
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-background">
       <Header />
 
-      <div className="container mx-auto max-w-4xl px-4 py-8">
+      <div className="container mx-auto max-w-5xl px-4 py-8">
         <div className="grid gap-8 lg:grid-cols-3">
-          <div className="lg:col-span-2">
+          {/* Área de seleção de pagamento */}
+          <div className="lg:col-span-2 space-y-6">
             <Card className="border-2">
               <CardHeader>
                 <CardTitle className="text-2xl">Forma de Pagamento</CardTitle>
               </CardHeader>
               <CardContent>
-                <RadioGroup value={metodoPagamento} onValueChange={setMetodoPagamento}>
-                  <Card className="mb-4 cursor-pointer transition-colors hover:border-primary">
+                <RadioGroup value={metodoPagamento} onValueChange={(value) => setMetodoPagamento(value as 'pix' | 'entrega')}>
+                  <Card className="mb-4 cursor-pointer transition-all hover:border-primary hover:shadow-md">
                     <CardContent className="flex items-center gap-4 p-4">
                       <RadioGroupItem value="pix" id="pix" />
                       <Label htmlFor="pix" className="flex flex-1 cursor-pointer items-center gap-3">
-                        <Smartphone className="h-6 w-6 text-primary" />
+                        <QrCode className="h-6 w-6 text-primary" />
                         <div>
                           <p className="font-semibold">PIX</p>
                           <p className="text-sm text-muted-foreground">Pagamento instantâneo</p>
@@ -60,63 +90,121 @@ const Pagamento = () => {
                     </CardContent>
                   </Card>
 
-                  <Card className="mb-4 cursor-pointer transition-colors hover:border-primary">
+                  <Card className="cursor-pointer transition-all hover:border-primary hover:shadow-md">
                     <CardContent className="flex items-center gap-4 p-4">
-                      <RadioGroupItem value="cartao-credito" id="cartao-credito" />
-                      <Label htmlFor="cartao-credito" className="flex flex-1 cursor-pointer items-center gap-3">
-                        <CreditCard className="h-6 w-6 text-primary" />
+                      <RadioGroupItem value="entrega" id="entrega" />
+                      <Label htmlFor="entrega" className="flex flex-1 cursor-pointer items-center gap-3">
+                        <Truck className="h-6 w-6 text-primary" />
                         <div>
-                          <p className="font-semibold">Cartão de Crédito</p>
-                          <p className="text-sm text-muted-foreground">Pague na entrega</p>
+                          <p className="font-semibold">Pagamento na Entrega</p>
+                          <p className="text-sm text-muted-foreground">Dinheiro ou cartão (motoboy leva maquininha)</p>
                         </div>
                       </Label>
-                    </CardContent>
-                  </Card>
-
-                  <Card className="mb-4 cursor-pointer transition-colors hover:border-primary">
-                    <CardContent className="flex items-center gap-4 p-4">
-                      <RadioGroupItem value="cartao-debito" id="cartao-debito" />
-                      <Label htmlFor="cartao-debito" className="flex flex-1 cursor-pointer items-center gap-3">
-                        <Wallet className="h-6 w-6 text-primary" />
-                        <div>
-                          <p className="font-semibold">Cartão de Débito</p>
-                          <p className="text-sm text-muted-foreground">Pague na entrega</p>
-                        </div>
-                      </Label>
-                    </CardContent>
-                  </Card>
-
-                  <Card className="cursor-pointer transition-colors hover:border-primary">
-                    <CardContent className="p-4">
-                      <div className="flex items-center gap-4">
-                        <RadioGroupItem value="dinheiro" id="dinheiro" />
-                        <Label htmlFor="dinheiro" className="flex flex-1 cursor-pointer items-center gap-3">
-                          <Banknote className="h-6 w-6 text-primary" />
-                          <div>
-                            <p className="font-semibold">Dinheiro</p>
-                            <p className="text-sm text-muted-foreground">Pague na entrega</p>
-                          </div>
-                        </Label>
-                      </div>
-                      {metodoPagamento === 'dinheiro' && (
-                        <div className="mt-4 space-y-2">
-                          <Label htmlFor="troco">Precisa de troco para quanto?</Label>
-                          <Input
-                            id="troco"
-                            type="number"
-                            placeholder="R$ 0,00"
-                            value={troco}
-                            onChange={(e) => setTroco(e.target.value)}
-                          />
-                        </div>
-                      )}
                     </CardContent>
                   </Card>
                 </RadioGroup>
               </CardContent>
             </Card>
+
+            {/* Área de PIX */}
+            {metodoPagamento === 'pix' && (
+              <Card className="border-2 border-primary/20 bg-gradient-to-br from-background to-primary/5">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-xl">
+                    <QrCode className="h-6 w-6 text-primary" />
+                    Pague com PIX
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  {/* QR Code */}
+                  <div className="flex flex-col items-center space-y-4">
+                    <div className="rounded-lg bg-white p-4 shadow-lg">
+                      <img 
+                        src="/images/qr-code-pix.png" 
+                        alt="QR Code PIX" 
+                        className="w-64 h-64 object-contain"
+                      />
+                    </div>
+                    <p className="text-sm text-center text-muted-foreground max-w-md">
+                      Escaneie o QR Code acima com seu app de banco ou use o código PIX abaixo
+                    </p>
+                  </div>
+
+                  {/* Código Copia e Cola */}
+                  <div className="space-y-2">
+                    <Label className="text-sm font-semibold">Código Copia e Cola PIX:</Label>
+                    <div className="flex gap-2">
+                      <div className="flex-1 rounded-lg bg-muted p-3 font-mono text-xs break-all">
+                        {pixCode}
+                      </div>
+                      <Button 
+                        onClick={handleCopyPixCode}
+                        variant="outline"
+                        size="icon"
+                        className="shrink-0"
+                      >
+                        {pixCopiado ? <CheckCircle2 className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Instrução */}
+                  <div className="rounded-lg bg-primary/10 p-4 space-y-3">
+                    <p className="font-semibold text-sm">📱 Como pagar:</p>
+                    <ol className="text-sm space-y-1 ml-4 list-decimal">
+                      <li>Escaneie o QR Code OU copie o código PIX</li>
+                      <li>Abra seu app de banco e faça o pagamento</li>
+                      <li>Clique no botão abaixo para enviar o comprovante</li>
+                    </ol>
+                    <p className="text-xs text-muted-foreground italic mt-3">
+                      ⚠️ Seu pedido só é confirmado após enviar o comprovante pelo WhatsApp.
+                    </p>
+                  </div>
+
+                  {/* Botão de enviar comprovante */}
+                  <Button 
+                    onClick={handleFinalizarPedido}
+                    className="w-full"
+                    size="lg"
+                  >
+                    ✅ Já paguei – Enviar Comprovante no WhatsApp
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Área de Pagamento na Entrega */}
+            {metodoPagamento === 'entrega' && (
+              <Card className="border-2 border-primary/20 bg-gradient-to-br from-background to-accent/5">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-xl">
+                    <Truck className="h-6 w-6 text-primary" />
+                    Pagamento na Entrega
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="rounded-lg bg-accent/10 p-6 space-y-4">
+                    <p className="text-base">
+                      💳 O motoboy levará a maquininha. Você pode pagar em <strong>cartão de crédito</strong>, <strong>débito</strong> ou <strong>dinheiro</strong>.
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      Seu pedido será confirmado assim que você finalizar pelo WhatsApp.
+                    </p>
+                  </div>
+
+                  <Button 
+                    onClick={handleFinalizarPedido}
+                    className="w-full"
+                    size="lg"
+                  >
+                    📲 Finalizar Pedido pelo WhatsApp
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
           </div>
 
+          {/* Resumo do Pedido */}
           <div className="lg:col-span-1">
             <Card className="sticky top-20 border-2">
               <CardHeader>
@@ -124,37 +212,29 @@ const Pagamento = () => {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <div className="flex justify-between">
+                  <div className="flex justify-between text-sm">
                     <span>Subtotal</span>
                     <span>R$ {total.toFixed(2)}</span>
                   </div>
-                  <div className="flex justify-between">
+                  <div className="flex justify-between text-sm">
                     <span>Taxa de entrega</span>
                     <span>R$ {deliveryFee.toFixed(2)}</span>
                   </div>
                   <div className="border-t pt-2">
                     <div className="flex justify-between text-xl font-bold">
                       <span>Total</span>
-                      <span className="text-accent">R$ {(total + deliveryFee).toFixed(2)}</span>
+                      <span className="text-primary">R$ {totalComTaxa.toFixed(2)}</span>
                     </div>
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <Button
-                    onClick={handleSubmit}
-                    disabled={!metodoPagamento}
-                    className="w-full"
-                    size="lg"
-                  >
-                    Finalizar Pedido
-                  </Button>
+                <div className="space-y-2 pt-4">
                   <Button
                     variant="outline"
-                    onClick={() => navigate('/endereco')}
+                    onClick={() => navigate('/carrinho')}
                     className="w-full"
                   >
-                    Voltar
+                    ← Voltar ao Carrinho
                   </Button>
                 </div>
               </CardContent>

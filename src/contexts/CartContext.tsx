@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { Product } from '@/data/products';
 
-interface CartItem extends Product {
+export interface CartItem extends Product {
   quantidade: number;
 }
 
