@@ -14,7 +14,66 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      pedidos: {
+        Row: {
+          created_at: string | null
+          endereco: Json
+          id: string
+          infinitepay_order_nsu: string | null
+          infinitepay_receipt_url: string | null
+          infinitepay_transaction_nsu: string | null
+          items: Json
+          metodo_pagamento: string
+          numero: number
+          status: string | null
+          subtotal: number
+          taxa_entrega: number
+          telefone: string
+          total: number
+          troco: number | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          endereco: Json
+          id?: string
+          infinitepay_order_nsu?: string | null
+          infinitepay_receipt_url?: string | null
+          infinitepay_transaction_nsu?: string | null
+          items: Json
+          metodo_pagamento: string
+          numero: number
+          status?: string | null
+          subtotal: number
+          taxa_entrega: number
+          telefone: string
+          total: number
+          troco?: number | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          endereco?: Json
+          id?: string
+          infinitepay_order_nsu?: string | null
+          infinitepay_receipt_url?: string | null
+          infinitepay_transaction_nsu?: string | null
+          items?: Json
+          metodo_pagamento?: string
+          numero?: number
+          status?: string | null
+          subtotal?: number
+          taxa_entrega?: number
+          telefone?: string
+          total?: number
+          troco?: number | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
