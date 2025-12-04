@@ -1,17 +1,20 @@
+import { useState, useEffect } from 'react';
 import { Header } from '@/components/Header';
 import { Button } from '@/components/ui/button';
 import { useCart } from '@/contexts/CartContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { getDeliveryFee } from '@/utils/deliveryFees';
 import { useNavigate } from 'react-router-dom';
-import { useEffect } from 'react';
 import { Plus, Minus, Trash2, ShoppingBag } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
 
 const Carrinho = () => {
   const { items, updateQuantity, removeFromCart, clearCart, total, deliveryFee, setDeliveryFee } = useCart();
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [observacoes, setObservacoes] = useState('');
 
   useEffect(() => {
     if (user && 'bairro' in user) {
@@ -22,15 +25,20 @@ const Carrinho = () => {
     }
   }, [user, setDeliveryFee]);
 
+  // Save observacoes to localStorage for use in payment page
+  useEffect(() => {
+    localStorage.setItem('pedido_observacoes', observacoes);
+  }, [observacoes]);
+
   if (items.length === 0) {
     return (
-      <div className="min-h-screen">
+      <div className="min-h-screen bg-background">
         <Header />
         <div className="container mx-auto px-4 py-12">
           <Card className="mx-auto max-w-md text-center">
             <CardContent className="py-12">
               <ShoppingBag className="mx-auto mb-4 h-16 w-16 text-muted-foreground" />
-              <h2 className="mb-2 text-2xl font-bold">Seu carrinho está vazio</h2>
+              <h2 className="mb-2 text-2xl font-bold text-foreground">Seu carrinho está vazio</h2>
               <p className="mb-6 text-muted-foreground">
                 Adicione esfihas deliciosas ao seu pedido
               </p>
@@ -45,14 +53,14 @@ const Carrinho = () => {
   }
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-background">
       <Header />
 
       <div className="container mx-auto px-4 py-8">
         <div className="mb-6 flex items-center justify-between">
-          <h1 className="text-3xl font-bold">Seu Pedido</h1>
-          <Button variant="outline" onClick={clearCart}>
-            Esvaziar carrinho
+          <h1 className="text-2xl font-bold text-foreground sm:text-3xl">Seu Pedido</h1>
+          <Button variant="outline" onClick={clearCart} size="sm">
+            Esvaziar
           </Button>
         </div>
 
@@ -63,7 +71,7 @@ const Carrinho = () => {
                 <Card key={item.id}>
                   <CardContent className="p-4">
                     <div className="flex gap-4">
-                      <div className="h-24 w-24 flex-shrink-0 overflow-hidden rounded-lg bg-muted">
+                      <div className="h-20 w-20 flex-shrink-0 overflow-hidden rounded-lg bg-muted sm:h-24 sm:w-24">
                         <img
                           src={item.imagem}
                           alt={item.nome}
@@ -73,43 +81,44 @@ const Carrinho = () => {
 
                       <div className="flex flex-1 flex-col justify-between">
                         <div>
-                          <h3 className="font-bold">{item.nome}</h3>
-                          <p className="text-sm text-muted-foreground">{item.categoria}</p>
+                          <h3 className="text-sm font-bold text-foreground sm:text-base">{item.nome}</h3>
+                          <p className="text-xs text-muted-foreground sm:text-sm">{item.categoria}</p>
                         </div>
 
                         <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-1 sm:gap-2">
                             <Button
                               variant="outline"
                               size="icon"
-                              className="h-8 w-8"
+                              className="h-7 w-7 sm:h-8 sm:w-8"
                               onClick={() => updateQuantity(item.id, item.quantidade - 1)}
                             >
-                              <Minus className="h-4 w-4" />
+                              <Minus className="h-3 w-3 sm:h-4 sm:w-4" />
                             </Button>
-                            <span className="w-8 text-center font-bold">
+                            <span className="w-6 text-center text-sm font-bold text-foreground sm:w-8 sm:text-base">
                               {item.quantidade}
                             </span>
                             <Button
                               variant="outline"
                               size="icon"
-                              className="h-8 w-8"
+                              className="h-7 w-7 sm:h-8 sm:w-8"
                               onClick={() => updateQuantity(item.id, item.quantidade + 1)}
                             >
-                              <Plus className="h-4 w-4" />
+                              <Plus className="h-3 w-3 sm:h-4 sm:w-4" />
                             </Button>
                           </div>
 
-                          <div className="flex items-center gap-4">
-                            <span className="text-lg font-bold text-accent">
+                          <div className="flex items-center gap-2 sm:gap-4">
+                            <span className="text-sm font-bold text-foreground sm:text-lg">
                               R$ {(item.preco * item.quantidade).toFixed(2)}
                             </span>
                             <Button
                               variant="ghost"
                               size="icon"
+                              className="h-7 w-7 sm:h-8 sm:w-8"
                               onClick={() => removeFromCart(item.id)}
                             >
-                              <Trash2 className="h-4 w-4" />
+                              <Trash2 className="h-4 w-4 text-destructive" />
                             </Button>
                           </div>
                         </div>
@@ -119,6 +128,23 @@ const Carrinho = () => {
                 </Card>
               ))}
             </div>
+
+            {/* Campo de observações */}
+            <Card className="mt-6">
+              <CardContent className="p-4">
+                <Label htmlFor="observacoes" className="text-sm font-semibold text-foreground">
+                  Observações do pedido
+                </Label>
+                <Textarea
+                  id="observacoes"
+                  placeholder="Ex: Sem cebola, entregar na portaria, etc."
+                  value={observacoes}
+                  onChange={(e) => setObservacoes(e.target.value)}
+                  className="mt-2"
+                  rows={3}
+                />
+              </CardContent>
+            </Card>
 
             <Button
               variant="outline"
@@ -132,17 +158,17 @@ const Carrinho = () => {
           <div className="lg:col-span-1">
             <Card className="sticky top-20">
               <CardContent className="p-6">
-                <h2 className="mb-4 text-xl font-bold">Resumo do Pedido</h2>
+                <h2 className="mb-4 text-xl font-bold text-foreground">Resumo do Pedido</h2>
 
                 <div className="space-y-2">
-                  <div className="flex justify-between">
+                  <div className="flex justify-between text-foreground">
                     <span>Subtotal</span>
-                    <span>R$ {total.toFixed(2)}</span>
+                    <span className="font-medium">R$ {total.toFixed(2)}</span>
                   </div>
                   {deliveryFee > 0 ? (
-                    <div className="flex justify-between">
+                    <div className="flex justify-between text-foreground">
                       <span>Taxa de entrega</span>
-                      <span>R$ {deliveryFee.toFixed(2)}</span>
+                      <span className="font-medium">R$ {deliveryFee.toFixed(2)}</span>
                     </div>
                   ) : (
                     <div className="flex justify-between text-sm text-muted-foreground">
@@ -151,9 +177,9 @@ const Carrinho = () => {
                     </div>
                   )}
                   <div className="my-4 border-t pt-4">
-                    <div className="flex justify-between text-xl font-bold">
+                    <div className="flex justify-between text-xl font-bold text-foreground">
                       <span>Total</span>
-                      <span className="text-accent">R$ {(total + deliveryFee).toFixed(2)}</span>
+                      <span>R$ {(total + deliveryFee).toFixed(2)}</span>
                     </div>
                   </div>
                 </div>
