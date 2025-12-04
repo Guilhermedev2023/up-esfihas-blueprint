@@ -13,6 +13,7 @@ import Carrinho from "./pages/Carrinho";
 import Endereco from "./pages/Endereco";
 import Pagamento from "./pages/Pagamento";
 import Confirmacao from "./pages/Confirmacao";
+import Perfil from "./pages/Perfil";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -35,6 +36,7 @@ const App = () => (
               <Route path="/endereco" element={<Endereco />} />
               <Route path="/pagamento" element={<Pagamento />} />
               <Route path="/confirmacao" element={<Confirmacao />} />
+              <Route path="/perfil" element={<Perfil />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </CartProvider>
