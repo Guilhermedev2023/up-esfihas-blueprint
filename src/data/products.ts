@@ -49,8 +49,6 @@ export const products: Product[] = [
     imagem: "/images/esfiha-queijo.png",
     categoria: "Unitárias"
   },
-
-  // Esfihas Doces
   {
     id: "chocolate-unit",
     nome: "Chocolate Branco",
@@ -136,27 +134,43 @@ export const products: Product[] = [
 
   // Bebidas
   {
-    id: "bebida-coca",
-    nome: "Coca-Cola 350ml",
+    id: "bebida-coca-lata",
+    nome: "Coca-Cola Lata 350ml",
     descricao: "Refrigerante Coca-Cola lata gelada",
     preco: 5.00,
-    imagem: "/images/esfiha-queijo.png",
+    imagem: "/images/coca-lata.webp",
+    categoria: "Bebidas"
+  },
+  {
+    id: "bebida-coca-600",
+    nome: "Coca-Cola 600ml",
+    descricao: "Refrigerante Coca-Cola garrafa 600ml",
+    preco: 8.00,
+    imagem: "/images/coca-600ml.webp",
     categoria: "Bebidas"
   },
   {
     id: "bebida-guarana",
-    nome: "Guaraná Antarctica 350ml",
+    nome: "Guaraná Antarctica Lata 350ml",
     descricao: "Refrigerante Guaraná Antarctica lata gelada",
     preco: 5.00,
-    imagem: "/images/esfiha-queijo.png",
+    imagem: "/images/guarana-lata.webp",
     categoria: "Bebidas"
   },
   {
-    id: "bebida-agua",
-    nome: "Água Mineral 500ml",
+    id: "bebida-agua-sem-gas",
+    nome: "Água Mineral Sem Gás 500ml",
     descricao: "Água mineral sem gás",
     preco: 3.00,
-    imagem: "/images/esfiha-queijo.png",
+    imagem: "/images/agua-sem-gas.jpg",
+    categoria: "Bebidas"
+  },
+  {
+    id: "bebida-agua-com-gas",
+    nome: "Água Mineral Com Gás 500ml",
+    descricao: "Água mineral com gás",
+    preco: 3.50,
+    imagem: "/images/agua-sem-gas.jpg",
     categoria: "Bebidas"
   },
 ];
@@ -170,6 +184,6 @@ export const categories = [
 export const categoryImages: Record<string, string> = {
   "Unitárias": "/images/esfiha-carne.png",
   "Combos": "/images/esfiha-bacon.png",
-  "Bebidas": "/images/esfiha-queijo.png",
+  "Bebidas": "/images/coca-lata.webp",
   "Todas": "/images/esfiha-strogonoff.png"
 };

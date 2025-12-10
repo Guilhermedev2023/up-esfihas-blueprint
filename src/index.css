@@ -8,14 +8,14 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    --background: 40 67% 88%;
-    --foreground: 0 0% 17%;
+    --background: 0 0% 96%;
+    --foreground: 0 0% 15%;
 
     --card: 0 0% 100%;
-    --card-foreground: 0 0% 17%;
+    --card-foreground: 0 0% 15%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 17%;
+    --popover-foreground: 0 0% 15%;
 
     --primary: 8 64% 33%;
     --primary-foreground: 0 0% 100%;
@@ -23,35 +23,34 @@ All colors MUST be HSL.
     --secondary: 16 59% 49%;
     --secondary-foreground: 0 0% 100%;
 
-    --muted: 40 50% 94%;
-    --muted-foreground: 20 47% 20%;
+    --muted: 0 0% 93%;
+    --muted-foreground: 0 0% 45%;
 
     --accent: 44 100% 65%;
-    --accent-foreground: 20 47% 20%;
+    --accent-foreground: 0 0% 15%;
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 40 40% 85%;
-    --input: 40 40% 85%;
+    --border: 0 0% 88%;
+    --input: 0 0% 88%;
     --ring: 8 64% 33%;
 
-    --radius: 1rem;
+    --radius: 0.75rem;
 
     --brand-brown: 20 47% 20%;
     --brand-beige: 40 67% 88%;
-    --brand-beige-dark: 40 45% 92%;
   }
 
   .dark {
-    --background: 20 47% 20%;
-    --foreground: 40 67% 88%;
+    --background: 0 0% 10%;
+    --foreground: 0 0% 95%;
 
-    --card: 20 40% 15%;
-    --card-foreground: 40 67% 88%;
+    --card: 0 0% 15%;
+    --card-foreground: 0 0% 95%;
 
-    --popover: 20 40% 15%;
-    --popover-foreground: 40 67% 88%;
+    --popover: 0 0% 15%;
+    --popover-foreground: 0 0% 95%;
 
     --primary: 8 64% 45%;
     --primary-foreground: 0 0% 100%;
@@ -59,17 +58,17 @@ All colors MUST be HSL.
     --secondary: 16 59% 49%;
     --secondary-foreground: 0 0% 100%;
 
-    --muted: 20 35% 25%;
-    --muted-foreground: 40 50% 70%;
+    --muted: 0 0% 20%;
+    --muted-foreground: 0 0% 60%;
 
     --accent: 44 100% 65%;
-    --accent-foreground: 20 47% 20%;
+    --accent-foreground: 0 0% 15%;
 
     --destructive: 0 62.8% 50.6%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 20 30% 30%;
-    --input: 20 30% 30%;
+    --border: 0 0% 25%;
+    --input: 0 0% 25%;
     --ring: 8 64% 45%;
   }
 }
@@ -85,5 +84,15 @@ All colors MUST be HSL.
 
   h1, h2, h3, h4, h5, h6 {
     @apply font-baloo font-bold;
+  }
+}
+
+@layer utilities {
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
   }
 }
