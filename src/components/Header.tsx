@@ -1,4 +1,4 @@
-import { ShoppingCart, Menu, User } from 'lucide-react';
+import { ShoppingCart, User } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useCart } from '@/contexts/CartContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -16,21 +16,18 @@ export const Header = () => {
   const navigate = useNavigate();
 
   return (
-    <header className="sticky top-0 z-50 w-full bg-primary shadow-md">
-      <div className="container mx-auto flex h-16 items-center justify-between px-4">
+    <header className="sticky top-0 z-50 w-full bg-card border-b border-border shadow-sm">
+      <div className="container mx-auto flex h-14 items-center justify-between px-4">
         <Link to="/home" className="flex items-center gap-2">
-          <img src="/images/logo.jpg" alt="UP Esfihas Artesanais" className="h-12 w-12 rounded-full object-cover" />
-          <h1 className="text-xl font-bold text-primary-foreground sm:text-2xl">
-            UP ESFIHAS
-          </h1>
+          <span className="text-lg font-bold text-foreground">UP ESFIHAS</span>
         </Link>
 
-        <div className="flex items-center gap-2 sm:gap-4">
+        <div className="flex items-center gap-3">
           <Link to="/carrinho">
-            <Button variant="ghost" size="icon" className="relative text-primary-foreground hover:bg-primary/90">
-              <ShoppingCart className="h-5 w-5 sm:h-6 sm:w-6" />
+            <Button variant="ghost" size="icon" className="relative text-foreground hover:bg-muted">
+              <ShoppingCart className="h-5 w-5" />
               {itemCount > 0 && (
-                <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-accent text-xs font-bold text-accent-foreground">
+                <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
                   {itemCount}
                 </span>
               )}
@@ -40,13 +37,16 @@ export const Header = () => {
           {isAuthenticated ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="text-primary-foreground hover:bg-primary/90">
-                  <User className="h-5 w-5 sm:h-6 sm:w-6" />
+                <Button variant="ghost" size="icon" className="text-foreground hover:bg-muted">
+                  <User className="h-5 w-5" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48">
                 <DropdownMenuItem className="font-semibold">
                   {user?.nome}
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate('/perfil')}>
+                  Meu Perfil
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={logout}>
                   Sair
@@ -57,7 +57,7 @@ export const Header = () => {
             <Button 
               variant="ghost" 
               size="sm" 
-              className="text-primary-foreground hover:bg-primary/90"
+              className="text-foreground hover:bg-muted"
               onClick={() => navigate('/login')}
             >
               Entrar

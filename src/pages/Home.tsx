@@ -2,9 +2,10 @@ import { useState } from 'react';
 import { Header } from '@/components/Header';
 import { ProductCard } from '@/components/ProductCard';
 import { CategoryBar } from '@/components/CategoryBar';
+import { CategoryBanner } from '@/components/CategoryBanner';
 import { FloatingCart } from '@/components/FloatingCart';
 import { StoreStatus } from '@/components/StoreStatus';
-import { products } from '@/data/products';
+import { products, categories, categoryImages } from '@/data/products';
 
 const Home = () => {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -13,40 +14,35 @@ const Home = () => {
     ? products.filter(p => p.categoria === selectedCategory)
     : products;
 
+  // Group products by category for "Todas" view
+  const productsByCategory = categories.reduce((acc, category) => {
+    acc[category] = products.filter(p => p.categoria === category);
+    return acc;
+  }, {} as Record<string, typeof products>);
+
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background pb-32">
       <Header />
 
-      {/* Hero Section */}
-      <section 
-        className="relative bg-cover bg-center py-16 sm:py-24"
-        style={{
-          backgroundImage: `linear-gradient(to bottom, rgba(78, 43, 26, 0.85), rgba(78, 43, 26, 0.95)), url('/images/esfiha-carne.png')`
-        }}
-      >
-        <div className="container mx-auto px-4 text-center">
-          {/* Logo centralizada */}
-          <div className="mb-6 flex justify-center">
+      {/* Hero Section with Logo */}
+      <section className="bg-card py-6">
+        <div className="container mx-auto px-4">
+          {/* Centered Large Logo */}
+          <div className="flex flex-col items-center">
             <img 
               src="/images/logo.jpg" 
               alt="UP Esfihas" 
-              className="h-24 w-24 rounded-full border-4 border-background object-cover shadow-2xl sm:h-32 sm:w-32"
+              className="h-28 w-28 rounded-full border-4 border-primary object-cover shadow-xl sm:h-36 sm:w-36"
             />
-          </div>
-          
-          <h1 className="mb-4 text-3xl font-bold text-background sm:text-5xl">
-            Esfihas Artesanais
-          </h1>
-          <p className="mb-2 text-lg text-background/90 sm:text-2xl">
-            Rápido, Quente e Saboroso
-          </p>
-          <p className="mb-8 text-sm text-background/80 sm:text-base">
-            Feitas com ingredientes selecionados e muito amor
-          </p>
-          
-          {/* Status da loja */}
-          <div className="flex justify-center">
-            <StoreStatus />
+            <h1 className="mt-4 text-2xl font-bold text-foreground sm:text-3xl">
+              Esfihas Artesanais
+            </h1>
+            <p className="mt-1 text-muted-foreground">
+              Rápido, Quente e Saboroso
+            </p>
+            <div className="mt-4">
+              <StoreStatus />
+            </div>
           </div>
         </div>
       </section>
@@ -57,28 +53,51 @@ const Home = () => {
         onSelectCategory={setSelectedCategory} 
       />
 
-      {/* Cardápio */}
-      <section id="cardapio" className="pb-32 pt-8">
+      {/* Menu Section */}
+      <section className="pt-6">
         <div className="container mx-auto px-4">
-          <h3 className="mb-6 text-center text-2xl font-bold text-foreground">
-            {selectedCategory || 'Cardápio Completo'}
-          </h3>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-            {filteredProducts.map((product) => (
-              <ProductCard key={product.id} product={product} />
-            ))}
-          </div>
+          {selectedCategory ? (
+            // Single category view
+            <>
+              <CategoryBanner 
+                title={selectedCategory} 
+                image={categoryImages[selectedCategory]}
+              />
+              <div className="space-y-3">
+                {filteredProducts.map((product) => (
+                  <ProductCard key={product.id} product={product} />
+                ))}
+              </div>
+            </>
+          ) : (
+            // All categories view with banners
+            <>
+              {categories.map((category) => (
+                <div key={category} className="mb-8">
+                  <CategoryBanner 
+                    title={category} 
+                    image={categoryImages[category]}
+                  />
+                  <div className="space-y-3">
+                    {productsByCategory[category].map((product) => (
+                      <ProductCard key={product.id} product={product} />
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </>
+          )}
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="bg-brand-brown py-8 text-background">
+      <footer className="mt-12 bg-primary py-8 text-primary-foreground">
         <div className="container mx-auto px-4 text-center">
-          <h4 className="mb-4 text-2xl font-bold">UP Esfihas Artesanais</h4>
-          <p className="mb-2">Sabor que eleva sua fome!</p>
-          <p className="mb-4">WhatsApp: (48) 99150-6966</p>
-          <p className="text-sm opacity-75">Todos os dias, das 18h às 00h</p>
-          <p className="mt-6 text-sm">2025 UP Esfihas Artesanais</p>
+          <h4 className="text-xl font-bold">UP Esfihas Artesanais</h4>
+          <p className="mt-2 text-sm opacity-90">Sabor que eleva sua fome!</p>
+          <p className="mt-2 text-sm opacity-75">WhatsApp: (48) 99150-6966</p>
+          <p className="mt-1 text-sm opacity-75">Todos os dias, das 18h às 00h</p>
+          <p className="mt-4 text-xs opacity-60">2025 UP Esfihas Artesanais</p>
         </div>
       </footer>
 

@@ -9,10 +9,9 @@ export const CategoryBar = ({ selectedCategory, onSelectCategory }: CategoryBarP
   const allCategories = [...categories, 'Todas'];
 
   return (
-    <div className="sticky top-16 z-40 border-b bg-background/95 py-4 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+    <div className="sticky top-14 z-40 bg-card border-b border-border">
       <div className="container mx-auto px-4">
-        <h2 className="mb-4 text-center text-xl font-bold text-foreground">Menu</h2>
-        <div className="flex justify-center gap-3 overflow-x-auto pb-2 sm:gap-4">
+        <div className="flex items-center gap-2 overflow-x-auto py-3 scrollbar-hide">
           {allCategories.map((category) => {
             const isSelected = category === 'Todas' 
               ? selectedCategory === null 
@@ -22,20 +21,18 @@ export const CategoryBar = ({ selectedCategory, onSelectCategory }: CategoryBarP
               <button
                 key={category}
                 onClick={() => onSelectCategory(category === 'Todas' ? null : category)}
-                className={`flex flex-col items-center gap-2 rounded-xl p-2 transition-all ${
-                  isSelected 
-                    ? 'bg-primary text-primary-foreground shadow-lg scale-105' 
-                    : 'bg-card hover:bg-muted'
+                className={`flex items-center gap-2 whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium transition-all ${
+                  isSelected
+                    ? 'bg-primary text-primary-foreground shadow-md'
+                    : 'bg-muted text-muted-foreground hover:bg-muted/80'
                 }`}
               >
-                <div className="h-16 w-16 overflow-hidden rounded-lg sm:h-20 sm:w-20">
-                  <img
-                    src={categoryImages[category]}
-                    alt={category}
-                    className="h-full w-full object-cover"
-                  />
-                </div>
-                <span className="text-xs font-medium sm:text-sm">{category}</span>
+                <img 
+                  src={categoryImages[category]} 
+                  alt={category}
+                  className="h-6 w-6 rounded-full object-cover"
+                />
+                <span>{category}</span>
               </button>
             );
           })}

@@ -2,51 +2,61 @@ import { useCart } from '@/contexts/CartContext';
 import { useNavigate } from 'react-router-dom';
 import { ShoppingCart, X, Minus, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 export const FloatingCart = () => {
-  const { items, total, updateQuantity, removeFromCart, itemCount } = useCart();
+  const { items, total, updateQuantity, itemCount } = useCart();
   const navigate = useNavigate();
   const [isExpanded, setIsExpanded] = useState(false);
+  const [isAnimating, setIsAnimating] = useState(false);
+
+  // Animate cart when items change
+  useEffect(() => {
+    if (itemCount > 0) {
+      setIsAnimating(true);
+      const timer = setTimeout(() => setIsAnimating(false), 300);
+      return () => clearTimeout(timer);
+    }
+  }, [itemCount]);
 
   if (items.length === 0) return null;
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 bg-card border-t-2 border-primary shadow-2xl">
+    <div className={`fixed bottom-0 left-0 right-0 z-50 bg-card border-t border-border shadow-2xl transition-transform ${isAnimating ? 'scale-105' : 'scale-100'}`}>
       {/* Expanded view */}
       {isExpanded && (
-        <div className="max-h-64 overflow-y-auto p-4">
-          <div className="flex items-center justify-between mb-3">
+        <div className="max-h-64 overflow-y-auto border-b border-border">
+          <div className="flex items-center justify-between p-4 pb-2">
             <h3 className="font-bold text-foreground">Seu Pedido</h3>
             <button onClick={() => setIsExpanded(false)}>
               <X className="h-5 w-5 text-muted-foreground" />
             </button>
           </div>
-          <div className="space-y-3">
+          <div className="space-y-2 px-4 pb-4">
             {items.map((item) => (
-              <div key={item.id} className="flex items-center justify-between gap-3 rounded-lg bg-muted p-2">
-                <div className="flex items-center gap-2">
+              <div key={item.id} className="flex items-center justify-between gap-3 rounded-lg bg-muted p-3">
+                <div className="flex items-center gap-3">
                   <img 
                     src={item.imagem} 
                     alt={item.nome} 
-                    className="h-10 w-10 rounded-md object-cover"
+                    className="h-12 w-12 rounded-lg object-cover"
                   />
                   <div>
                     <p className="text-sm font-medium text-foreground">{item.nome}</p>
-                    <p className="text-xs text-foreground">R$ {item.preco.toFixed(2)}</p>
+                    <p className="text-sm text-foreground font-semibold">R$ {item.preco.toFixed(2)}</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 rounded-full bg-card border border-border px-1">
                   <button
                     onClick={() => updateQuantity(item.id, item.quantidade - 1)}
-                    className="rounded-full bg-primary/10 p-1 text-primary hover:bg-primary/20"
+                    className="flex h-7 w-7 items-center justify-center rounded-full text-primary hover:bg-muted"
                   >
                     <Minus className="h-3 w-3" />
                   </button>
-                  <span className="w-6 text-center text-sm font-bold text-foreground">{item.quantidade}</span>
+                  <span className="w-5 text-center text-sm font-bold text-foreground">{item.quantidade}</span>
                   <button
                     onClick={() => updateQuantity(item.id, item.quantidade + 1)}
-                    className="rounded-full bg-primary/10 p-1 text-primary hover:bg-primary/20"
+                    className="flex h-7 w-7 items-center justify-center rounded-full text-primary hover:bg-muted"
                   >
                     <Plus className="h-3 w-3" />
                   </button>
@@ -63,9 +73,9 @@ export const FloatingCart = () => {
           onClick={() => setIsExpanded(!isExpanded)}
           className="flex items-center gap-3"
         >
-          <div className="relative">
-            <ShoppingCart className="h-6 w-6 text-primary" />
-            <span className="absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
+          <div className={`relative rounded-full bg-primary p-2 transition-transform ${isAnimating ? 'scale-110' : 'scale-100'}`}>
+            <ShoppingCart className="h-5 w-5 text-primary-foreground" />
+            <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-accent text-xs font-bold text-accent-foreground">
               {itemCount}
             </span>
           </div>
@@ -80,7 +90,7 @@ export const FloatingCart = () => {
         <Button 
           onClick={() => navigate('/carrinho')}
           size="lg"
-          className="px-8"
+          className="rounded-full px-6"
         >
           Ver Carrinho
         </Button>
