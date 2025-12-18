@@ -156,7 +156,7 @@ export const products: Product[] = [
     nome: "Chocolate Meio Amargo",
     descricao: "Massa doce com recheio de chocolate meio amargo",
     preco: 5.95,
-    imagem: "/images/chocolate-meio-amargo.jpg",
+    imagem: "/images/esfiha-chocolate-meio-amargo-unit.png",
     categoria: "Doces Unitárias"
   },
 
@@ -166,7 +166,7 @@ export const products: Product[] = [
     nome: "Combo Chocolate Branco com Confete (5 unidades)",
     descricao: "5 esfihas doces de chocolate branco com confetes coloridos",
     preco: 24.99,
-    imagem: "/images/chocolate-branco-5.jpg",
+    imagem: "/images/esfiha-chocolate-branco-5un.png",
     categoria: "Doces Combos"
   },
   {
@@ -174,7 +174,7 @@ export const products: Product[] = [
     nome: "Combo Chocolate Branco com Confete (10 unidades)",
     descricao: "10 esfihas doces de chocolate branco com confetes coloridos",
     preco: 47.99,
-    imagem: "/images/chocolate-branco-10.jpg",
+    imagem: "/images/esfiha-chocolate-branco-10un.png",
     categoria: "Doces Combos"
   },
   {
@@ -182,7 +182,7 @@ export const products: Product[] = [
     nome: "Combo Chocolate Meio Amargo (10 unidades)",
     descricao: "10 esfihas doces de chocolate meio amargo",
     preco: 47.99,
-    imagem: "/images/chocolate-meio-amargo.jpg",
+    imagem: "/images/esfiha-chocolate-meio-amargo-10un.png",
     categoria: "Doces Combos"
   },
 
