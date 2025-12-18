@@ -4,8 +4,8 @@ import { ProductCard } from '@/components/ProductCard';
 import { CategoryBar } from '@/components/CategoryBar';
 import { CategoryBanner } from '@/components/CategoryBanner';
 import { FloatingCart } from '@/components/FloatingCart';
-import { StoreStatus } from '@/components/StoreStatus';
-import { products, categories, categoryImages } from '@/data/products';
+import { HeroSlider } from '@/components/HeroSlider';
+import { products, categories, categoryBanners } from '@/data/products';
 
 const Home = () => {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -24,28 +24,8 @@ const Home = () => {
     <div className="min-h-screen bg-background pb-32">
       <Header />
 
-      {/* Hero Section with Logo */}
-      <section className="bg-card py-6">
-        <div className="container mx-auto px-4">
-          {/* Centered Large Logo */}
-          <div className="flex flex-col items-center">
-            <img 
-              src="/images/logo.jpg" 
-              alt="UP Esfihas" 
-              className="h-28 w-28 rounded-full border-4 border-primary object-cover shadow-xl sm:h-36 sm:w-36"
-            />
-            <h1 className="mt-4 text-2xl font-bold text-foreground sm:text-3xl">
-              Esfihas Artesanais
-            </h1>
-            <p className="mt-1 text-muted-foreground">
-              Rápido, Quente e Saboroso
-            </p>
-            <div className="mt-4">
-              <StoreStatus />
-            </div>
-          </div>
-        </div>
-      </section>
+      {/* Hero Section with Slider */}
+      <HeroSlider />
 
       {/* Category Bar Sticky */}
       <CategoryBar 
@@ -60,8 +40,7 @@ const Home = () => {
             // Single category view
             <>
               <CategoryBanner 
-                title={selectedCategory} 
-                image={categoryImages[selectedCategory]}
+                title={categoryBanners[selectedCategory] || selectedCategory}
               />
               <div className="space-y-3">
                 {filteredProducts.map((product) => (
@@ -75,8 +54,7 @@ const Home = () => {
               {categories.map((category) => (
                 <div key={category} className="mb-8">
                   <CategoryBanner 
-                    title={category} 
-                    image={categoryImages[category]}
+                    title={categoryBanners[category]}
                   />
                   <div className="space-y-3">
                     {productsByCategory[category].map((product) => (

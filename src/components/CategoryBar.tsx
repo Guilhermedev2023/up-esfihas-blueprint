@@ -10,7 +10,7 @@ export const CategoryBar = ({ selectedCategory, onSelectCategory }: CategoryBarP
 
   return (
     <div className="sticky top-14 z-40 bg-card border-b border-border">
-      <div className="container mx-auto px-4">
+      <div className="container mx-auto px-2 sm:px-4">
         <div className="flex items-center gap-2 overflow-x-auto py-3 scrollbar-hide">
           {allCategories.map((category) => {
             const isSelected = category === 'Todas' 
@@ -21,7 +21,7 @@ export const CategoryBar = ({ selectedCategory, onSelectCategory }: CategoryBarP
               <button
                 key={category}
                 onClick={() => onSelectCategory(category === 'Todas' ? null : category)}
-                className={`flex items-center gap-2 whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium transition-all ${
+                className={`flex flex-col items-center gap-1 min-w-[80px] sm:min-w-[100px] rounded-xl px-3 py-2 text-xs font-medium transition-all ${
                   isSelected
                     ? 'bg-primary text-primary-foreground shadow-md'
                     : 'bg-muted text-muted-foreground hover:bg-muted/80'
@@ -30,9 +30,11 @@ export const CategoryBar = ({ selectedCategory, onSelectCategory }: CategoryBarP
                 <img 
                   src={categoryImages[category]} 
                   alt={category}
-                  className="h-6 w-6 rounded-full object-cover"
+                  className="h-10 w-10 rounded-full object-cover border-2 border-white/20"
                 />
-                <span>{category}</span>
+                <span className="text-center leading-tight whitespace-normal">
+                  {category}
+                </span>
               </button>
             );
           })}
