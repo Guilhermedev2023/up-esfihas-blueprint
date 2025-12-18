@@ -46,7 +46,7 @@ export const products: Product[] = [
     nome: "Vegetariana",
     descricao: "Mix de vegetais frescos e temperados",
     preco: 4.95,
-    imagem: "/images/vegetariana-5.jpg",
+    imagem: "/images/esfiha-vegetariana.png",
     categoria: "Unitárias"
   },
 
@@ -56,7 +56,7 @@ export const products: Product[] = [
     nome: "Combo Carne (5 unidades)",
     descricao: "5 esfihas de carne selecionada",
     preco: 17.50,
-    imagem: "/images/carne.jpg",
+    imagem: "/images/esfiha-carne-5un.png",
     categoria: "Combos 5un"
   },
   {
@@ -64,7 +64,7 @@ export const products: Product[] = [
     nome: "Combo Queijo (5 unidades)",
     descricao: "5 esfihas de queijo derretido",
     preco: 15.99,
-    imagem: "/images/queijo.jpg",
+    imagem: "/images/esfiha-queijo-5un.png",
     categoria: "Combos 5un"
   },
   {
@@ -72,7 +72,7 @@ export const products: Product[] = [
     nome: "Combo Strogonoff (5 unidades)",
     descricao: "5 esfihas de strogonoff de frango",
     preco: 19.99,
-    imagem: "/images/strogonoff.jpg",
+    imagem: "/images/esfiha-strogonoff-5un.png",
     categoria: "Combos 5un"
   },
   {
@@ -80,7 +80,7 @@ export const products: Product[] = [
     nome: "Combo Bacon (5 unidades)",
     descricao: "5 esfihas de bacon com catupiry",
     preco: 19.99,
-    imagem: "/images/bacon.jpg",
+    imagem: "/images/esfiha-bacon-5un.png",
     categoria: "Combos 5un"
   },
   {
@@ -98,7 +98,7 @@ export const products: Product[] = [
     nome: "Combo Carne (10 unidades)",
     descricao: "10 esfihas de carne selecionada",
     preco: 34.99,
-    imagem: "/images/carne.jpg",
+    imagem: "/images/esfiha-carne-10un.png",
     categoria: "Combos 10un"
   },
   {
@@ -106,7 +106,7 @@ export const products: Product[] = [
     nome: "Combo Queijo (10 unidades)",
     descricao: "10 esfihas de queijo derretido",
     preco: 31.99,
-    imagem: "/images/queijo.jpg",
+    imagem: "/images/esfiha-queijo-10un.png",
     categoria: "Combos 10un"
   },
   {
@@ -114,7 +114,7 @@ export const products: Product[] = [
     nome: "Combo Strogonoff (10 unidades)",
     descricao: "10 esfihas de strogonoff de frango",
     preco: 39.99,
-    imagem: "/images/strogonoff.jpg",
+    imagem: "/images/esfiha-strogonoff-10un.png",
     categoria: "Combos 10un"
   },
   {
@@ -122,7 +122,7 @@ export const products: Product[] = [
     nome: "Combo Bacon (10 unidades)",
     descricao: "10 esfihas de bacon com catupiry",
     preco: 39.99,
-    imagem: "/images/bacon.jpg",
+    imagem: "/images/esfiha-bacon-10un.png",
     categoria: "Combos 10un"
   },
   {
@@ -148,7 +148,7 @@ export const products: Product[] = [
     nome: "Chocolate Branco com Confete",
     descricao: "Massa doce com recheio de chocolate branco e confetes coloridos",
     preco: 5.95,
-    imagem: "/images/chocolate-branco-5.jpg",
+    imagem: "/images/esfiha-chocolate-branco-unit.png",
     categoria: "Doces Unitárias"
   },
   {
