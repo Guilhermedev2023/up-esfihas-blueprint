@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { toast } from 'sonner';
 import { Loader2, Shield } from 'lucide-react';
 import { z } from 'zod';
+import { supabase } from '@/integrations/supabase/client';
 
 const loginSchema = z.object({
   email: z.string().email('E-mail inválido'),
@@ -18,6 +19,7 @@ const AdminLogin = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isSignUp, setIsSignUp] = useState(false);
   const { signIn } = useAdmin();
   const navigate = useNavigate();
 
@@ -33,23 +35,44 @@ const AdminLogin = () => {
     setIsLoading(true);
 
     try {
-      const { error } = await signIn(email, password);
+      if (isSignUp) {
+        const { error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            emailRedirectTo: `${window.location.origin}/admin`
+          }
+        });
 
-      if (error) {
-        if (error.message.includes('Invalid login credentials')) {
-          toast.error('E-mail ou senha incorretos');
-        } else {
-          toast.error('Erro ao fazer login: ' + error.message);
+        if (error) {
+          if (error.message.includes('already registered')) {
+            toast.error('Este e-mail já está cadastrado');
+          } else {
+            toast.error('Erro ao cadastrar: ' + error.message);
+          }
+          return;
         }
-        return;
-      }
 
-      // Wait a bit for the auth state to update and check admin role
-      setTimeout(() => {
-        navigate('/admin');
-      }, 500);
+        toast.success('Conta criada! Agora faça login.');
+        setIsSignUp(false);
+      } else {
+        const { error } = await signIn(email, password);
+
+        if (error) {
+          if (error.message.includes('Invalid login credentials')) {
+            toast.error('E-mail ou senha incorretos');
+          } else {
+            toast.error('Erro ao fazer login: ' + error.message);
+          }
+          return;
+        }
+
+        setTimeout(() => {
+          navigate('/admin');
+        }, 500);
+      }
     } catch (error) {
-      toast.error('Erro ao fazer login');
+      toast.error(isSignUp ? 'Erro ao cadastrar' : 'Erro ao fazer login');
     } finally {
       setIsLoading(false);
     }
@@ -64,7 +87,7 @@ const AdminLogin = () => {
           </div>
           <CardTitle className="text-2xl">Área Administrativa</CardTitle>
           <CardDescription>
-            Entre com suas credenciais de administrador
+            {isSignUp ? 'Crie sua conta de administrador' : 'Entre com suas credenciais de administrador'}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -97,13 +120,22 @@ const AdminLogin = () => {
               {isLoading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Entrando...
+                  {isSignUp ? 'Cadastrando...' : 'Entrando...'}
                 </>
               ) : (
-                'Entrar'
+                isSignUp ? 'Cadastrar' : 'Entrar'
               )}
             </Button>
           </form>
+          <div className="mt-4 text-center">
+            <button
+              type="button"
+              onClick={() => setIsSignUp(!isSignUp)}
+              className="text-sm text-muted-foreground hover:text-primary underline"
+            >
+              {isSignUp ? 'Já tem conta? Faça login' : 'Não tem conta? Cadastre-se'}
+            </button>
+          </div>
         </CardContent>
       </Card>
     </div>
