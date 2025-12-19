@@ -14,6 +14,33 @@ export type Database = {
   }
   public: {
     Tables: {
+      bairros: {
+        Row: {
+          ativo: boolean | null
+          created_at: string | null
+          id: string
+          nome: string
+          taxa_entrega: number
+          updated_at: string | null
+        }
+        Insert: {
+          ativo?: boolean | null
+          created_at?: string | null
+          id?: string
+          nome: string
+          taxa_entrega?: number
+          updated_at?: string | null
+        }
+        Update: {
+          ativo?: boolean | null
+          created_at?: string | null
+          id?: string
+          nome?: string
+          taxa_entrega?: number
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       pedidos: {
         Row: {
           created_at: string | null
@@ -74,15 +101,78 @@ export type Database = {
         }
         Relationships: []
       }
+      produtos: {
+        Row: {
+          ativo: boolean | null
+          categoria: string
+          created_at: string | null
+          descricao: string | null
+          id: string
+          imagem: string | null
+          nome: string
+          preco: number
+          updated_at: string | null
+        }
+        Insert: {
+          ativo?: boolean | null
+          categoria: string
+          created_at?: string | null
+          descricao?: string | null
+          id?: string
+          imagem?: string | null
+          nome: string
+          preco: number
+          updated_at?: string | null
+        }
+        Update: {
+          ativo?: boolean | null
+          categoria?: string
+          created_at?: string | null
+          descricao?: string | null
+          id?: string
+          imagem?: string | null
+          nome?: string
+          preco?: number
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string | null
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "user"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -209,6 +299,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "user"],
+    },
   },
 } as const

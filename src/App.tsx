@@ -15,6 +15,8 @@ import Pagamento from "./pages/Pagamento";
 import Confirmacao from "./pages/Confirmacao";
 import Perfil from "./pages/Perfil";
 import NotFound from "./pages/NotFound";
+import AdminLogin from "./pages/AdminLogin";
+import Admin from "./pages/Admin";
 
 const queryClient = new QueryClient();
 
@@ -37,6 +39,8 @@ const App = () => (
               <Route path="/pagamento" element={<Pagamento />} />
               <Route path="/confirmacao" element={<Confirmacao />} />
               <Route path="/perfil" element={<Perfil />} />
+              <Route path="/admin/login" element={<AdminLogin />} />
+              <Route path="/admin" element={<Admin />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </CartProvider>
