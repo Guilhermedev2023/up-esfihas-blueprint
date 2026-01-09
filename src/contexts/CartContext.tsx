@@ -1,14 +1,24 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { Product } from '@/data/products';
+import { Produto } from '@/hooks/useProdutos';
 
-export interface CartItem extends Product {
+// Accept both Product (static) and Produto (from database)
+type ProductType = Product | Produto;
+
+export interface CartItem {
+  id: string;
+  nome: string;
+  descricao: string | null;
+  preco: number;
+  imagem: string | null;
+  categoria: string;
   quantidade: number;
 }
 
 interface CartContextType {
   items: CartItem[];
-  addToCart: (product: Product) => void;
+  addToCart: (product: ProductType) => void;
   removeFromCart: (productId: string) => void;
   updateQuantity: (productId: string, quantidade: number) => void;
   clearCart: () => void;
@@ -35,7 +45,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.setItem('cart', JSON.stringify(items));
   }, [items]);
 
-  const addToCart = (product: Product) => {
+  const addToCart = (product: ProductType) => {
     setItems(currentItems => {
       const existingItem = currentItems.find(item => item.id === product.id);
       
@@ -49,7 +59,15 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       toast.success('Item adicionado ao carrinho');
-      return [...currentItems, { ...product, quantidade: 1 }];
+      return [...currentItems, { 
+        id: product.id,
+        nome: product.nome,
+        descricao: product.descricao,
+        preco: product.preco,
+        imagem: product.imagem,
+        categoria: product.categoria,
+        quantidade: 1 
+      }];
     });
   };
 

@@ -6,10 +6,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
-import { Loader2, Pencil, Search, Filter } from 'lucide-react';
+import { Loader2, Pencil, Search, Filter, AlertTriangle } from 'lucide-react';
 import { categories } from '@/data/products';
 
 const AdminProdutos = () => {
@@ -18,6 +19,7 @@ const AdminProdutos = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [editingProduto, setEditingProduto] = useState<Produto | null>(null);
+  const [produtoToDeactivate, setProdutoToDeactivate] = useState<Produto | null>(null);
   const [editForm, setEditForm] = useState({
     nome: '',
     descricao: '',
@@ -26,12 +28,23 @@ const AdminProdutos = () => {
   });
 
   const handleToggleAtivo = async (produto: Produto) => {
+    // If deactivating, show confirmation dialog
+    if (produto.ativo) {
+      setProdutoToDeactivate(produto);
+      return;
+    }
+    // If activating, proceed directly
+    await confirmToggleAtivo(produto);
+  };
+
+  const confirmToggleAtivo = async (produto: Produto) => {
     try {
       await updateProduto.mutateAsync({
         id: produto.id,
         ativo: !produto.ativo,
       });
-      toast.success(`${produto.nome} ${produto.ativo ? 'desativado' : 'ativado'} com sucesso`);
+      toast.success(`${produto.nome} ${produto.ativo ? 'desativado' : 'ativado'} com sucesso! O cardápio foi atualizado.`);
+      setProdutoToDeactivate(null);
     } catch (error) {
       toast.error('Erro ao atualizar produto');
     }
@@ -242,6 +255,39 @@ const AdminProdutos = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Confirmation Dialog for Deactivation */}
+      <AlertDialog open={!!produtoToDeactivate} onOpenChange={() => setProdutoToDeactivate(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-amber-500" />
+              Confirmar Desativação
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2">
+              <p>
+                Você tem certeza que deseja desativar <strong>"{produtoToDeactivate?.nome}"</strong>?
+              </p>
+              <p className="text-amber-600 font-medium">
+                ⚠️ Este item não será mais exibido no cardápio para os clientes.
+              </p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => produtoToDeactivate && confirmToggleAtivo(produtoToDeactivate)}
+              className="bg-red-600 hover:bg-red-700"
+              disabled={updateProduto.isPending}
+            >
+              {updateProduto.isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              ) : null}
+              Confirmar Desativação
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

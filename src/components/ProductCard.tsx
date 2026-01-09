@@ -1,12 +1,16 @@
 import { Product } from '@/data/products';
+import { Produto } from '@/hooks/useProdutos';
 import { useCart } from '@/contexts/CartContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Plus, Minus } from 'lucide-react';
 
+// Accept both Product (static) and Produto (from database)
+type ProductType = Product | Produto;
+
 interface ProductCardProps {
-  product: Product;
+  product: ProductType;
 }
 
 export const ProductCard = ({ product }: ProductCardProps) => {
