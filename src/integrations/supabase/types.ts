@@ -41,6 +41,36 @@ export type Database = {
         }
         Relationships: []
       }
+      horario_funcionamento: {
+        Row: {
+          ativo: boolean | null
+          created_at: string | null
+          dias_semana: string
+          hora_abertura: string
+          hora_fechamento: string
+          id: string
+          updated_at: string | null
+        }
+        Insert: {
+          ativo?: boolean | null
+          created_at?: string | null
+          dias_semana?: string
+          hora_abertura?: string
+          hora_fechamento?: string
+          id?: string
+          updated_at?: string | null
+        }
+        Update: {
+          ativo?: boolean | null
+          created_at?: string | null
+          dias_semana?: string
+          hora_abertura?: string
+          hora_fechamento?: string
+          id?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       pedidos: {
         Row: {
           created_at: string | null

@@ -4,9 +4,10 @@ import { useAdmin } from '@/hooks/useAdmin';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import { Loader2, LogOut, Package, MapPin, Settings } from 'lucide-react';
+import { Loader2, LogOut, Package, MapPin, Settings, Clock } from 'lucide-react';
 import AdminProdutos from '@/components/admin/AdminProdutos';
 import AdminBairros from '@/components/admin/AdminBairros';
+import AdminHorario from '@/components/admin/AdminHorario';
 
 const Admin = () => {
   const { user, isAdmin, loading, signOut } = useAdmin();
@@ -70,7 +71,7 @@ const Admin = () => {
       {/* Main Content */}
       <main className="container mx-auto px-4 py-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full max-w-md grid-cols-2">
+          <TabsList className="grid w-full max-w-lg grid-cols-3">
             <TabsTrigger value="produtos" className="flex items-center gap-2">
               <Package className="h-4 w-4" />
               Cardápio
@@ -78,6 +79,10 @@ const Admin = () => {
             <TabsTrigger value="bairros" className="flex items-center gap-2">
               <MapPin className="h-4 w-4" />
               Entregas
+            </TabsTrigger>
+            <TabsTrigger value="horario" className="flex items-center gap-2">
+              <Clock className="h-4 w-4" />
+              Horário
             </TabsTrigger>
           </TabsList>
 
@@ -87,6 +92,10 @@ const Admin = () => {
 
           <TabsContent value="bairros">
             <AdminBairros />
+          </TabsContent>
+
+          <TabsContent value="horario">
+            <AdminHorario />
           </TabsContent>
         </Tabs>
       </main>
