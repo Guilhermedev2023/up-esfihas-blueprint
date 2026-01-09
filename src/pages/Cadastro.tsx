@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -7,6 +7,8 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
+import { Loader2 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 const Cadastro = () => {
   const [formData, setFormData] = useState({
@@ -19,21 +21,39 @@ const Cadastro = () => {
     confirmarSenha: ''
   });
 
-  const bairrosDisponiveis = [
-    'Cachoeira',
-    'Ponta das Canas',
-    'Ingleses',
-    'Canasvieiras',
-    'Jurerê',
-    'Vargem Grande'
-  ];
-
+  const [bairrosDisponiveis, setBairrosDisponiveis] = useState<string[]>([]);
   const [aceitoTermos, setAceitoTermos] = useState(false);
   const [loading, setLoading] = useState(false);
   const { register } = useAuth();
   const navigate = useNavigate();
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Fetch bairros from database
+  useEffect(() => {
+    const fetchBairros = async () => {
+      const { data, error } = await supabase
+        .from('bairros')
+        .select('nome')
+        .eq('ativo', true)
+        .order('nome');
+      
+      if (!error && data) {
+        setBairrosDisponiveis(data.map(b => b.nome));
+      } else {
+        // Fallback bairros if fetch fails
+        setBairrosDisponiveis([
+          'Cachoeira',
+          'Ponta das Canas',
+          'Ingleses',
+          'Canasvieiras',
+          'Jurerê',
+          'Vargem Grande'
+        ]);
+      }
+    };
+    fetchBairros();
+  }, []);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
@@ -104,6 +124,7 @@ const Cadastro = () => {
                 value={formData.nome}
                 onChange={handleChange}
                 required
+                disabled={loading}
               />
             </div>
             <div className="space-y-2">
@@ -116,6 +137,7 @@ const Cadastro = () => {
                 value={formData.telefone}
                 onChange={handleChange}
                 required
+                disabled={loading}
               />
             </div>
             <div className="space-y-2">
@@ -127,6 +149,7 @@ const Cadastro = () => {
                 value={formData.endereco}
                 onChange={handleChange}
                 required
+                disabled={loading}
               />
             </div>
             <div className="space-y-2">
@@ -135,9 +158,10 @@ const Cadastro = () => {
                 id="bairro"
                 name="bairro"
                 value={formData.bairro}
-                onChange={handleChange as any}
+                onChange={handleChange}
                 required
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                disabled={loading}
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <option value="">Selecione seu bairro</option>
                 {bairrosDisponiveis.map((bairro) => (
@@ -157,6 +181,7 @@ const Cadastro = () => {
                 value={formData.email}
                 onChange={handleChange}
                 required
+                disabled={loading}
               />
             </div>
             <div className="space-y-2">
@@ -169,6 +194,7 @@ const Cadastro = () => {
                 value={formData.senha}
                 onChange={handleChange}
                 required
+                disabled={loading}
               />
             </div>
             <div className="space-y-2">
@@ -181,6 +207,7 @@ const Cadastro = () => {
                 value={formData.confirmarSenha}
                 onChange={handleChange}
                 required
+                disabled={loading}
               />
             </div>
             <div className="flex items-center space-x-2">
@@ -188,6 +215,7 @@ const Cadastro = () => {
                 id="termos" 
                 checked={aceitoTermos}
                 onCheckedChange={(checked) => setAceitoTermos(checked as boolean)}
+                disabled={loading}
               />
               <label
                 htmlFor="termos"
@@ -197,7 +225,14 @@ const Cadastro = () => {
               </label>
             </div>
             <Button type="submit" className="w-full" size="lg" disabled={loading}>
-              {loading ? 'Criando conta...' : 'Criar Conta'}
+              {loading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Criando conta...
+                </>
+              ) : (
+                'Criar Conta'
+              )}
             </Button>
             <div className="text-center">
               <Link to="/login" className="text-sm text-primary hover:underline">
