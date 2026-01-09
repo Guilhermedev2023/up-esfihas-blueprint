@@ -1,8 +1,26 @@
-import { isStoreOpen, getStoreStatusText, getStoreHoursText } from '@/utils/storeHours';
+import { useState, useEffect } from 'react';
+import { fetchHorarioFuncionamento, isStoreOpenWithConfig, isStoreOpen, getStoreStatusText, getStoreHoursText } from '@/utils/storeHours';
 import { Clock } from 'lucide-react';
 
 export const StoreStatus = () => {
-  const open = isStoreOpen();
+  const [open, setOpen] = useState(isStoreOpen());
+  const [hoursText, setHoursText] = useState(getStoreHoursText());
+
+  useEffect(() => {
+    const loadHorario = async () => {
+      const horario = await fetchHorarioFuncionamento();
+      setOpen(isStoreOpenWithConfig(horario));
+      const openTime = horario.hora_abertura.slice(0, 5).replace(':', 'h');
+      const closeTime = horario.hora_fechamento.slice(0, 5).replace(':', 'h');
+      setHoursText(`${horario.dias_semana}, ${openTime} às ${closeTime}`);
+    };
+
+    loadHorario();
+
+    // Update status every minute
+    const interval = setInterval(loadHorario, 60000);
+    return () => clearInterval(interval);
+  }, []);
   
   return (
     <div className="flex items-center gap-2">
@@ -14,11 +32,11 @@ export const StoreStatus = () => {
         }`}
       >
         <span className={`h-2 w-2 rounded-full ${open ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`} />
-        {getStoreStatusText()}
+        {open ? 'Aberto' : 'Fechado'}
       </div>
       <span className="hidden text-xs text-muted-foreground sm:inline">
         <Clock className="mr-1 inline h-3 w-3" />
-        {getStoreHoursText()}
+        {hoursText}
       </span>
     </div>
   );
