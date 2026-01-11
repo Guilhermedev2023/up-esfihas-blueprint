@@ -1,31 +1,86 @@
 import { useState } from 'react';
-import { useProdutos, useUpdateProduto, Produto } from '@/hooks/useProdutos';
+import { useProdutos, useUpdateProduto, useCreateProduto, Produto } from '@/hooks/useProdutos';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
-import { Loader2, Pencil, Search, Filter, AlertTriangle } from 'lucide-react';
-import { categories } from '@/data/products';
+import { Loader2, Pencil, Search, Filter, AlertTriangle, Plus } from 'lucide-react';
+
+const CATEGORIAS = [
+  'Unitárias',
+  'Combos 5un',
+  'Combos 10un',
+  'Doces Unitárias',
+  'Doces Combos',
+  'Bebidas'
+];
 
 const AdminProdutos = () => {
   const { data: produtos, isLoading, error } = useProdutos(true);
   const updateProduto = useUpdateProduto();
+  const createProduto = useCreateProduto();
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [editingProduto, setEditingProduto] = useState<Produto | null>(null);
   const [produtoToDeactivate, setProdutoToDeactivate] = useState<Produto | null>(null);
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [editForm, setEditForm] = useState({
     nome: '',
     descricao: '',
     preco: 0,
     ativo: true,
   });
+  const [newProdutoForm, setNewProdutoForm] = useState({
+    nome: '',
+    descricao: '',
+    preco: 0,
+    categoria: '',
+    imagem: '',
+  });
+
+  const handleAddProduto = async () => {
+    if (!newProdutoForm.nome.trim()) {
+      toast.error('Nome do produto é obrigatório');
+      return;
+    }
+    if (!newProdutoForm.categoria) {
+      toast.error('Selecione uma categoria');
+      return;
+    }
+    if (newProdutoForm.preco <= 0) {
+      toast.error('Preço deve ser maior que zero');
+      return;
+    }
+
+    try {
+      await createProduto.mutateAsync({
+        nome: newProdutoForm.nome.trim(),
+        descricao: newProdutoForm.descricao.trim() || null,
+        preco: newProdutoForm.preco,
+        categoria: newProdutoForm.categoria,
+        imagem: newProdutoForm.imagem.trim() || null,
+        ativo: true,
+      });
+      toast.success('Produto adicionado com sucesso!');
+      setIsAddDialogOpen(false);
+      setNewProdutoForm({
+        nome: '',
+        descricao: '',
+        preco: 0,
+        categoria: '',
+        imagem: '',
+      });
+    } catch (error) {
+      toast.error('Erro ao adicionar produto');
+    }
+  };
 
   const handleToggleAtivo = async (produto: Produto) => {
     // If deactivating, show confirmation dialog
@@ -85,6 +140,8 @@ const AdminProdutos = () => {
     return matchesSearch && matchesCategory;
   });
 
+  const allCategories = [...new Set([...CATEGORIAS, ...(produtos?.map(p => p.categoria) || [])])];
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -106,11 +163,17 @@ const AdminProdutos = () => {
   return (
     <div className="space-y-6">
       <Card>
-        <CardHeader>
-          <CardTitle>Gestão do Cardápio</CardTitle>
-          <CardDescription>
-            Gerencie os produtos, preços e disponibilidade do cardápio
-          </CardDescription>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <div>
+            <CardTitle>Gestão do Cardápio</CardTitle>
+            <CardDescription>
+              Gerencie os produtos, preços e disponibilidade do cardápio
+            </CardDescription>
+          </div>
+          <Button onClick={() => setIsAddDialogOpen(true)} className="gap-2">
+            <Plus className="h-4 w-4" />
+            Novo Produto
+          </Button>
         </CardHeader>
         <CardContent className="space-y-4">
           {/* Filters */}
@@ -131,7 +194,7 @@ const AdminProdutos = () => {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Todas as categorias</SelectItem>
-                {categories.map((cat) => (
+                {allCategories.map((cat) => (
                   <SelectItem key={cat} value={cat}>{cat}</SelectItem>
                 ))}
               </SelectContent>
@@ -288,6 +351,99 @@ const AdminProdutos = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Add Product Dialog */}
+      <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Adicionar Novo Produto</DialogTitle>
+            <DialogDescription>
+              Preencha as informações do novo produto
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="new-nome">Nome *</Label>
+              <Input
+                id="new-nome"
+                placeholder="Ex: Esfiha de Carne"
+                value={newProdutoForm.nome}
+                onChange={(e) => setNewProdutoForm(prev => ({ ...prev, nome: e.target.value }))}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="new-descricao">Descrição</Label>
+              <Textarea
+                id="new-descricao"
+                placeholder="Descrição do produto..."
+                value={newProdutoForm.descricao}
+                onChange={(e) => setNewProdutoForm(prev => ({ ...prev, descricao: e.target.value }))}
+                rows={3}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="new-preco">Preço (R$) *</Label>
+              <Input
+                id="new-preco"
+                type="number"
+                step="0.01"
+                min="0"
+                placeholder="0.00"
+                value={newProdutoForm.preco || ''}
+                onChange={(e) => setNewProdutoForm(prev => ({ ...prev, preco: parseFloat(e.target.value) || 0 }))}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="new-categoria">Categoria *</Label>
+              <Select 
+                value={newProdutoForm.categoria} 
+                onValueChange={(value) => setNewProdutoForm(prev => ({ ...prev, categoria: value }))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione a categoria" />
+                </SelectTrigger>
+                <SelectContent>
+                  {CATEGORIAS.map((cat) => (
+                    <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="new-imagem">URL da Imagem (opcional)</Label>
+              <Input
+                id="new-imagem"
+                placeholder="/images/nome-da-imagem.jpg"
+                value={newProdutoForm.imagem}
+                onChange={(e) => setNewProdutoForm(prev => ({ ...prev, imagem: e.target.value }))}
+              />
+              <p className="text-xs text-muted-foreground">
+                Deixe em branco se não tiver imagem
+              </p>
+            </div>
+            <div className="flex gap-2 pt-4">
+              <Button 
+                variant="outline" 
+                className="flex-1" 
+                onClick={() => setIsAddDialogOpen(false)}
+              >
+                Cancelar
+              </Button>
+              <Button 
+                className="flex-1" 
+                onClick={handleAddProduto} 
+                disabled={createProduto.isPending}
+              >
+                {createProduto.isPending ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  'Adicionar'
+                )}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
