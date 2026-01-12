@@ -1,29 +1,21 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAdmin } from '@/hooks/useAdmin';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import { Loader2, LogOut, Package, MapPin, Settings, Clock } from 'lucide-react';
+import { LogOut, Package, MapPin, Settings, Clock } from 'lucide-react';
 import AdminProdutos from '@/components/admin/AdminProdutos';
 import AdminBairros from '@/components/admin/AdminBairros';
 import AdminHorario from '@/components/admin/AdminHorario';
 
 const Admin = () => {
-  const { user, isAdmin, loading, signOut } = useAdmin();
+  const { user, signOut } = useAdmin();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('produtos');
 
-  useEffect(() => {
-    if (!loading) {
-      if (!user) {
-        navigate('/admin/login');
-      } else if (!isAdmin) {
-        toast.error('Você não tem permissão para acessar esta área');
-        navigate('/home');
-      }
-    }
-  }, [user, isAdmin, loading, navigate]);
+  // Note: Auth and admin checks are handled by AdminRoute wrapper
+  // This component only renders when user is authenticated and is admin
 
   const handleSignOut = async () => {
     const { error } = await signOut();
@@ -34,18 +26,6 @@ const Admin = () => {
       navigate('/admin/login');
     }
   };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
-
-  if (!user || !isAdmin) {
-    return null;
-  }
 
   return (
     <div className="min-h-screen bg-background">
