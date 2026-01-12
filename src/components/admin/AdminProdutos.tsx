@@ -11,7 +11,8 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
-import { Loader2, Pencil, Search, Filter, AlertTriangle, Plus } from 'lucide-react';
+import { Loader2, Pencil, Search, Filter, AlertTriangle, Plus, ImageIcon } from 'lucide-react';
+import ProductImageUpload from './ProductImageUpload';
 
 const CATEGORIAS = [
   'Unitárias',
@@ -21,6 +22,8 @@ const CATEGORIAS = [
   'Doces Combos',
   'Bebidas'
 ];
+
+const DEFAULT_IMAGE = '/images/logo.jpg';
 
 const AdminProdutos = () => {
   const { data: produtos, isLoading, error } = useProdutos(true);
@@ -36,13 +39,14 @@ const AdminProdutos = () => {
     descricao: '',
     preco: 0,
     ativo: true,
+    imagem: null as string | null,
   });
   const [newProdutoForm, setNewProdutoForm] = useState({
     nome: '',
     descricao: '',
     preco: 0,
     categoria: '',
-    imagem: '',
+    imagem: null as string | null,
   });
 
   const handleAddProduto = async () => {
@@ -65,7 +69,7 @@ const AdminProdutos = () => {
         descricao: newProdutoForm.descricao.trim() || null,
         preco: newProdutoForm.preco,
         categoria: newProdutoForm.categoria,
-        imagem: newProdutoForm.imagem.trim() || null,
+        imagem: newProdutoForm.imagem || DEFAULT_IMAGE,
         ativo: true,
       });
       toast.success('Produto adicionado com sucesso!');
@@ -75,7 +79,7 @@ const AdminProdutos = () => {
         descricao: '',
         preco: 0,
         categoria: '',
-        imagem: '',
+        imagem: null,
       });
     } catch (error) {
       toast.error('Erro ao adicionar produto');
@@ -112,6 +116,7 @@ const AdminProdutos = () => {
       descricao: produto.descricao || '',
       preco: produto.preco,
       ativo: produto.ativo,
+      imagem: produto.imagem || null,
     });
   };
 
@@ -125,6 +130,7 @@ const AdminProdutos = () => {
         descricao: editForm.descricao,
         preco: editForm.preco,
         ativo: editForm.ativo,
+        imagem: editForm.imagem || DEFAULT_IMAGE,
       });
       toast.success('Produto atualizado com sucesso');
       setEditingProduto(null);
@@ -210,13 +216,19 @@ const AdminProdutos = () => {
                   produto.ativo ? 'bg-card' : 'bg-muted/50'
                 }`}
               >
-                {produto.imagem && (
-                  <img
-                    src={produto.imagem}
-                    alt={produto.nome}
-                    className="w-16 h-16 rounded-lg object-cover"
-                  />
-                )}
+                <div className="w-16 h-16 rounded-lg overflow-hidden bg-muted flex-shrink-0">
+                  {produto.imagem ? (
+                    <img
+                      src={produto.imagem}
+                      alt={produto.nome}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <ImageIcon className="h-6 w-6 text-muted-foreground" />
+                    </div>
+                  )}
+                </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <h3 className={`font-medium truncate ${!produto.ativo && 'text-muted-foreground'}`}>
@@ -260,7 +272,7 @@ const AdminProdutos = () => {
 
       {/* Edit Dialog */}
       <Dialog open={!!editingProduto} onOpenChange={() => setEditingProduto(null)}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Editar Produto</DialogTitle>
             <DialogDescription>
@@ -268,6 +280,15 @@ const AdminProdutos = () => {
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
+            {/* Image upload in edit mode */}
+            <div className="space-y-2">
+              <Label>Imagem do Produto</Label>
+              <ProductImageUpload
+                currentImageUrl={editForm.imagem}
+                onImageChange={(url) => setEditForm(prev => ({ ...prev, imagem: url }))}
+              />
+            </div>
+
             <div className="space-y-2">
               <Label htmlFor="edit-nome">Nome</Label>
               <Input
@@ -354,7 +375,7 @@ const AdminProdutos = () => {
 
       {/* Add Product Dialog */}
       <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Adicionar Novo Produto</DialogTitle>
             <DialogDescription>
@@ -362,6 +383,15 @@ const AdminProdutos = () => {
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
+            {/* Image upload */}
+            <div className="space-y-2">
+              <Label>Imagem do Produto</Label>
+              <ProductImageUpload
+                currentImageUrl={newProdutoForm.imagem}
+                onImageChange={(url) => setNewProdutoForm(prev => ({ ...prev, imagem: url }))}
+              />
+            </div>
+
             <div className="space-y-2">
               <Label htmlFor="new-nome">Nome *</Label>
               <Input
@@ -409,23 +439,20 @@ const AdminProdutos = () => {
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="new-imagem">URL da Imagem (opcional)</Label>
-              <Input
-                id="new-imagem"
-                placeholder="/images/nome-da-imagem.jpg"
-                value={newProdutoForm.imagem}
-                onChange={(e) => setNewProdutoForm(prev => ({ ...prev, imagem: e.target.value }))}
-              />
-              <p className="text-xs text-muted-foreground">
-                Deixe em branco se não tiver imagem
-              </p>
-            </div>
             <div className="flex gap-2 pt-4">
               <Button 
                 variant="outline" 
                 className="flex-1" 
-                onClick={() => setIsAddDialogOpen(false)}
+                onClick={() => {
+                  setIsAddDialogOpen(false);
+                  setNewProdutoForm({
+                    nome: '',
+                    descricao: '',
+                    preco: 0,
+                    categoria: '',
+                    imagem: null,
+                  });
+                }}
               >
                 Cancelar
               </Button>
