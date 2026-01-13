@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Header } from '@/components/Header';
 import { Button } from '@/components/ui/button';
@@ -7,20 +7,38 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { useCart } from '@/contexts/CartContext';
 import { useAuth } from '@/contexts/AuthContext';
-import { QrCode, Truck, Copy, CheckCircle2 } from 'lucide-react';
+import { QrCode, Truck, Copy, CheckCircle2, MapPin } from 'lucide-react';
 import { generateWhatsAppMessage, sendToWhatsApp } from '@/utils/whatsappMessage';
 import { toast } from 'sonner';
+import { AddressConfirmationModal, ConfirmedAddress } from '@/components/AddressConfirmationModal';
 
 const pixCode = '00020126740014BR.GOV.BCB.PIX0114436060510001740234linknabio.gg/christopher-rubin-6235204000053039865802BR5921CHRISTOPHER-RUBIN-6236009SAO PAULO62070503***6304CFF6';
 
 const Pagamento = () => {
   const navigate = useNavigate();
-  const { items, deliveryFee } = useCart();
+  const { items, deliveryFee, setDeliveryFee } = useCart();
   const { user } = useAuth();
-  const total = items.reduce((sum, item) => sum + item.preco * item.quantidade, 0);
-  const totalComTaxa = total + deliveryFee;
+  const subtotal = items.reduce((sum, item) => sum + item.preco * item.quantidade, 0);
   const [metodoPagamento, setMetodoPagamento] = useState<'pix' | 'entrega' | ''>('');
   const [pixCopiado, setPixCopiado] = useState(false);
+  const [showAddressModal, setShowAddressModal] = useState(false);
+  const [confirmedAddress, setConfirmedAddress] = useState<ConfirmedAddress | null>(null);
+
+  // Get observacoes from localStorage
+  const [observacoes, setObservacoes] = useState('');
+  useEffect(() => {
+    const saved = localStorage.getItem('pedido_observacoes');
+    if (saved) setObservacoes(saved);
+  }, []);
+
+  // Update delivery fee when address is confirmed
+  useEffect(() => {
+    if (confirmedAddress) {
+      setDeliveryFee(confirmedAddress.taxaEntrega);
+    }
+  }, [confirmedAddress, setDeliveryFee]);
+
+  const totalComTaxa = subtotal + (confirmedAddress?.taxaEntrega || deliveryFee);
 
   const handleCopyPixCode = () => {
     navigator.clipboard.writeText(pixCode);
@@ -29,34 +47,68 @@ const Pagamento = () => {
     setTimeout(() => setPixCopiado(false), 3000);
   };
 
-  const handleFinalizarPedido = () => {
+  // Get profile address data
+  const getProfileAddress = () => {
+    if (!user) return null;
+    
+    // Try to get from localStorage users array
+    const users = JSON.parse(localStorage.getItem('users') || '[]');
+    const fullUserData = users.find((u: any) => u.email === user.email);
+    
+    if (fullUserData) {
+      return {
+        endereco: fullUserData.endereco,
+        bairro: fullUserData.bairro
+      };
+    }
+    
+    // Fallback to user object
+    if ('endereco' in user && 'bairro' in user) {
+      return {
+        endereco: (user as any).endereco,
+        bairro: (user as any).bairro
+      };
+    }
+    
+    return null;
+  };
+
+  const handleFinalizarClick = () => {
     if (!metodoPagamento) {
       toast.error('Selecione uma forma de pagamento');
       return;
     }
 
     if (!user) {
-      toast.error('Dados do usuário incompletos');
+      toast.error('Faça login para continuar');
+      navigate('/login');
       return;
     }
 
-    // Buscar dados completos do localStorage
-    const users = JSON.parse(localStorage.getItem('users') || '[]');
-    const fullUserData = users.find((u: any) => u.email === user.email);
+    // Show address confirmation modal
+    setShowAddressModal(true);
+  };
 
-    if (!fullUserData || !fullUserData.endereco || !fullUserData.bairro) {
-      toast.error('Dados de endereço incompletos. Por favor, complete seu cadastro.');
-      return;
-    }
-
+  const handleAddressConfirm = (address: ConfirmedAddress) => {
+    setConfirmedAddress(address);
+    setShowAddressModal(false);
+    
+    // Now generate and send WhatsApp message
     const orderDetails = {
-      nome: user.nome,
-      telefone: user.telefone,
-      endereco: fullUserData.endereco,
-      bairro: fullUserData.bairro,
+      nome: user!.nome,
+      telefone: user!.telefone || '',
+      endereco: {
+        rua: address.rua,
+        numero: address.numero,
+        complemento: address.complemento,
+        bairro: address.bairro
+      },
       items,
-      total: totalComTaxa,
-      metodoPagamento
+      subtotal,
+      taxaEntrega: address.taxaEntrega,
+      total: subtotal + address.taxaEntrega,
+      metodoPagamento: metodoPagamento as 'pix' | 'entrega',
+      observacoes: observacoes || undefined
     };
 
     const message = generateWhatsAppMessage(orderDetails);
@@ -163,7 +215,7 @@ const Pagamento = () => {
 
                   {/* Botão de enviar comprovante */}
                   <Button 
-                    onClick={handleFinalizarPedido}
+                    onClick={handleFinalizarClick}
                     className="w-full"
                     size="lg"
                   >
@@ -193,7 +245,7 @@ const Pagamento = () => {
                   </div>
 
                   <Button 
-                    onClick={handleFinalizarPedido}
+                    onClick={handleFinalizarClick}
                     className="w-full"
                     size="lg"
                   >
@@ -211,14 +263,33 @@ const Pagamento = () => {
                 <CardTitle>Resumo do Pedido</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
+                {/* Confirmed Address Display */}
+                {confirmedAddress && (
+                  <div className="rounded-lg bg-primary/5 p-3 space-y-1">
+                    <div className="flex items-center gap-2 text-sm font-semibold text-primary">
+                      <MapPin className="h-4 w-4" />
+                      Endereço de entrega
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      {confirmedAddress.rua}, {confirmedAddress.numero}
+                      {confirmedAddress.complemento && `, ${confirmedAddress.complemento}`}
+                    </p>
+                    <p className="text-sm font-medium">{confirmedAddress.bairro}</p>
+                  </div>
+                )}
+
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
                     <span>Subtotal</span>
-                    <span>R$ {total.toFixed(2)}</span>
+                    <span>R$ {subtotal.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span>Taxa de entrega</span>
-                    <span>R$ {deliveryFee.toFixed(2)}</span>
+                    {confirmedAddress ? (
+                      <span>R$ {confirmedAddress.taxaEntrega.toFixed(2)}</span>
+                    ) : (
+                      <span className="text-muted-foreground">A confirmar</span>
+                    )}
                   </div>
                   <div className="border-t pt-2">
                     <div className="flex justify-between text-xl font-bold">
@@ -242,6 +313,14 @@ const Pagamento = () => {
           </div>
         </div>
       </div>
+
+      {/* Address Confirmation Modal */}
+      <AddressConfirmationModal
+        open={showAddressModal}
+        onOpenChange={setShowAddressModal}
+        profileAddress={getProfileAddress()}
+        onConfirm={handleAddressConfirm}
+      />
     </div>
   );
 };
