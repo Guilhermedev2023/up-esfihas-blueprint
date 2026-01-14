@@ -1,27 +1,39 @@
+import { useState } from 'react';
 import { Product } from '@/data/products';
 import { Produto } from '@/hooks/useProdutos';
 import { useCart } from '@/contexts/CartContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { toast } from 'sonner';
-import { Plus, Minus } from 'lucide-react';
+import { Plus, Minus, ChevronDown, ChevronUp } from 'lucide-react';
 
 // Accept both Product (static) and Produto (from database)
 type ProductType = Product | Produto;
 
 interface ProductCardProps {
   product: ProductType;
+  expandedId?: string | null;
+  onExpand?: (id: string | null) => void;
 }
 
-export const ProductCard = ({ product }: ProductCardProps) => {
+export const ProductCard = ({ product, expandedId, onExpand }: ProductCardProps) => {
   const { addToCart, items, updateQuantity, removeFromCart } = useCart();
   const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
+  
+  // Local state for standalone usage (when not controlled by parent)
+  const [localExpanded, setLocalExpanded] = useState(false);
+  
+  // Use controlled state if provided, otherwise use local state
+  const isExpanded = onExpand ? expandedId === product.id : localExpanded;
 
   const cartItem = items.find(item => item.id === product.id);
   const quantity = cartItem?.quantidade || 0;
 
-  const handleAddToCart = () => {
+  const handleAddToCart = (e: React.MouseEvent) => {
+    e.stopPropagation();
     if (!isAuthenticated) {
       toast.error('Faça login para adicionar itens ao carrinho');
       navigate('/login');
@@ -30,7 +42,8 @@ export const ProductCard = ({ product }: ProductCardProps) => {
     addToCart(product);
   };
 
-  const handleIncrement = () => {
+  const handleIncrement = (e: React.MouseEvent) => {
+    e.stopPropagation();
     if (!isAuthenticated) {
       toast.error('Faça login para adicionar itens ao carrinho');
       navigate('/login');
@@ -43,7 +56,8 @@ export const ProductCard = ({ product }: ProductCardProps) => {
     }
   };
 
-  const handleDecrement = () => {
+  const handleDecrement = (e: React.MouseEvent) => {
+    e.stopPropagation();
     if (quantity > 1) {
       updateQuantity(product.id, quantity - 1);
     } else if (quantity === 1) {
@@ -51,13 +65,48 @@ export const ProductCard = ({ product }: ProductCardProps) => {
     }
   };
 
+  const handleCardClick = () => {
+    if (!isMobile) return;
+    
+    if (onExpand) {
+      // Controlled mode: toggle between this product and null
+      onExpand(isExpanded ? null : product.id);
+    } else {
+      // Standalone mode: toggle local state
+      setLocalExpanded(!localExpanded);
+    }
+  };
+
   return (
-    <div className="flex items-stretch gap-4 rounded-xl border border-border bg-card p-4 transition-shadow hover:shadow-md">
+    <div 
+      className={`flex items-stretch gap-4 rounded-xl border border-border bg-card p-4 transition-all duration-200 hover:shadow-md ${isMobile ? 'cursor-pointer active:bg-muted/50' : ''}`}
+      onClick={handleCardClick}
+      role={isMobile ? 'button' : undefined}
+      tabIndex={isMobile ? 0 : undefined}
+      onKeyDown={isMobile ? (e) => { if (e.key === 'Enter' || e.key === ' ') handleCardClick(); } : undefined}
+    >
       {/* Content Left */}
-      <div className="flex flex-1 flex-col justify-between">
+      <div className="flex flex-1 flex-col justify-between min-w-0">
         <div>
-          <h3 className="font-bold text-foreground">{product.nome}</h3>
-          <p className="mt-1 text-sm text-muted-foreground line-clamp-2">{product.descricao}</p>
+          <div className="flex items-start justify-between gap-2">
+            <h3 className="font-bold text-foreground">{product.nome}</h3>
+            {isMobile && (
+              <span className="flex-shrink-0 text-muted-foreground mt-0.5">
+                {isExpanded ? (
+                  <ChevronUp className="h-4 w-4" />
+                ) : (
+                  <ChevronDown className="h-4 w-4" />
+                )}
+              </span>
+            )}
+          </div>
+          <p 
+            className={`mt-1 text-sm text-muted-foreground transition-all duration-200 ${
+              isMobile && !isExpanded ? 'line-clamp-2' : ''
+            }`}
+          >
+            {product.descricao}
+          </p>
         </div>
         
         <div className="mt-3">
