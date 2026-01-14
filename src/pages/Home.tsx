@@ -11,6 +11,7 @@ import { Loader2 } from 'lucide-react';
 
 const Home = () => {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [expandedProductId, setExpandedProductId] = useState<string | null>(null);
   const { data: produtos, isLoading } = useProdutos(false); // Only active products
 
   const filteredProducts = selectedCategory
@@ -23,6 +24,12 @@ const Home = () => {
     return acc;
   }, {} as Record<string, Produto[]>);
 
+  // Reset expanded product when category changes
+  const handleCategoryChange = (category: string | null) => {
+    setSelectedCategory(category);
+    setExpandedProductId(null);
+  };
+
   return (
     <div className="min-h-screen bg-background pb-32">
       <Header />
@@ -33,7 +40,7 @@ const Home = () => {
       {/* Category Bar Sticky */}
       <CategoryBar 
         selectedCategory={selectedCategory} 
-        onSelectCategory={setSelectedCategory} 
+        onSelectCategory={handleCategoryChange} 
       />
 
       {/* Menu Section */}
@@ -51,7 +58,12 @@ const Home = () => {
               />
               <div className="space-y-3">
                 {filteredProducts.map((product) => (
-                  <ProductCard key={product.id} product={product} />
+                  <ProductCard 
+                    key={product.id} 
+                    product={product}
+                    expandedId={expandedProductId}
+                    onExpand={setExpandedProductId}
+                  />
                 ))}
               </div>
             </>
@@ -68,7 +80,12 @@ const Home = () => {
                     />
                     <div className="space-y-3">
                       {categoryProducts.map((product) => (
-                        <ProductCard key={product.id} product={product} />
+                        <ProductCard 
+                          key={product.id} 
+                          product={product}
+                          expandedId={expandedProductId}
+                          onExpand={setExpandedProductId}
+                        />
                       ))}
                     </div>
                   </div>
