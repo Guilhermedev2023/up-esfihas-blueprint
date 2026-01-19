@@ -3,11 +3,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Card, CardContent } from '@/components/ui/card';
-import { MapPin, Home, AlertCircle } from 'lucide-react';
-import { useBairros } from '@/hooks/useBairros';
+import { MapPin, Home, AlertCircle, Loader2, Clock, Ruler } from 'lucide-react';
+import { calculateDeliveryFee, DeliveryCalculation } from '@/hooks/useDeliveryConfig';
 import { toast } from 'sonner';
 
 export interface ConfirmedAddress {
@@ -17,6 +16,8 @@ export interface ConfirmedAddress {
   bairro: string;
   taxaEntrega: number;
   origem: 'profile' | 'custom';
+  distanciaKm?: number;
+  tempoEstimado?: number;
 }
 
 interface ProfileAddress {
@@ -37,14 +38,18 @@ export const AddressConfirmationModal = ({
   profileAddress,
   onConfirm
 }: AddressConfirmationModalProps) => {
-  const { data: bairros = [], isLoading: loadingBairros } = useBairros();
   const [addressOption, setAddressOption] = useState<'profile' | 'custom'>('profile');
   
   // Custom address form state
-  const [customBairro, setCustomBairro] = useState('');
   const [customRua, setCustomRua] = useState('');
   const [customNumero, setCustomNumero] = useState('');
+  const [customBairro, setCustomBairro] = useState('');
   const [customComplemento, setCustomComplemento] = useState('');
+
+  // Delivery calculation state
+  const [isCalculating, setIsCalculating] = useState(false);
+  const [profileDelivery, setProfileDelivery] = useState<DeliveryCalculation | null>(null);
+  const [customDelivery, setCustomDelivery] = useState<DeliveryCalculation | null>(null);
 
   // Parse profile address (format: "Rua, Número, Complemento" or "Rua, Número")
   const parseProfileAddress = () => {
@@ -68,39 +73,67 @@ export const AddressConfirmationModal = ({
     parsedProfile.numero
   );
 
-  // Get delivery fee for a bairro
-  const getDeliveryFeeForBairro = (bairroNome: string): number | null => {
-    const bairro = bairros.find(b => b.nome === bairroNome);
-    return bairro ? bairro.taxa_entrega : null;
-  };
-
-  // Validate profile bairro is in delivery list
-  const profileBairroFee = profileAddress?.bairro ? getDeliveryFeeForBairro(profileAddress.bairro) : null;
-  const isProfileBairroValid = profileBairroFee !== null;
+  // Calculate delivery fee for profile address when modal opens
+  useEffect(() => {
+    if (open && hasValidProfileAddress && profileAddress?.bairro) {
+      const fullAddress = `${parsedProfile.rua}, ${parsedProfile.numero}, ${profileAddress.bairro}, Florianópolis, SC`;
+      setIsCalculating(true);
+      calculateDeliveryFee(fullAddress)
+        .then(result => {
+          setProfileDelivery(result);
+        })
+        .finally(() => {
+          setIsCalculating(false);
+        });
+    }
+  }, [open, hasValidProfileAddress]);
 
   // Validate custom form
-  const isCustomFormValid = customBairro && customRua.trim() && customNumero.trim();
-  const customBairroFee = customBairro ? getDeliveryFeeForBairro(customBairro) : null;
+  const isCustomFormValid = customRua.trim() && customNumero.trim() && customBairro.trim();
 
-  // Reset custom form when modal opens
+  // Reset form when modal opens
   useEffect(() => {
     if (open) {
-      setCustomBairro('');
       setCustomRua('');
       setCustomNumero('');
+      setCustomBairro('');
       setCustomComplemento('');
-      // Default to profile if valid, otherwise custom
-      if (hasValidProfileAddress && isProfileBairroValid) {
+      setCustomDelivery(null);
+      // Default to profile if valid
+      if (hasValidProfileAddress) {
         setAddressOption('profile');
       } else {
         setAddressOption('custom');
       }
     }
-  }, [open, hasValidProfileAddress, isProfileBairroValid]);
+  }, [open, hasValidProfileAddress]);
+
+  const handleCalculateCustomDelivery = async () => {
+    if (!isCustomFormValid) {
+      toast.error('Preencha todos os campos obrigatórios');
+      return;
+    }
+
+    const fullAddress = `${customRua.trim()}, ${customNumero.trim()}, ${customBairro.trim()}, Florianópolis, SC`;
+    setIsCalculating(true);
+    
+    try {
+      const result = await calculateDeliveryFee(fullAddress);
+      setCustomDelivery(result);
+      
+      if (!result.success) {
+        toast.error(result.error || 'Erro ao calcular taxa de entrega');
+      }
+    } catch {
+      toast.error('Erro ao calcular taxa de entrega');
+    } finally {
+      setIsCalculating(false);
+    }
+  };
 
   const handleConfirmProfileAddress = () => {
-    if (!hasValidProfileAddress || !isProfileBairroValid) {
-      toast.error('Endereço do cadastro incompleto ou bairro não atendido');
+    if (!hasValidProfileAddress || !profileDelivery?.success) {
+      toast.error('Endereço do cadastro incompleto ou fora da área de entrega');
       return;
     }
 
@@ -109,8 +142,10 @@ export const AddressConfirmationModal = ({
       numero: parsedProfile.numero,
       complemento: parsedProfile.complemento || undefined,
       bairro: profileAddress!.bairro!,
-      taxaEntrega: profileBairroFee!,
-      origem: 'profile'
+      taxaEntrega: profileDelivery.deliveryFee!,
+      origem: 'profile',
+      distanciaKm: profileDelivery.distanceKm,
+      tempoEstimado: profileDelivery.estimatedMinutes
     });
   };
 
@@ -120,8 +155,8 @@ export const AddressConfirmationModal = ({
       return;
     }
 
-    if (customBairroFee === null) {
-      toast.error('Infelizmente ainda não entregamos nessa região.');
+    if (!customDelivery?.success) {
+      toast.error('Calcule a taxa de entrega primeiro');
       return;
     }
 
@@ -129,9 +164,11 @@ export const AddressConfirmationModal = ({
       rua: customRua.trim(),
       numero: customNumero.trim(),
       complemento: customComplemento.trim() || undefined,
-      bairro: customBairro,
-      taxaEntrega: customBairroFee,
-      origem: 'custom'
+      bairro: customBairro.trim(),
+      taxaEntrega: customDelivery.deliveryFee!,
+      origem: 'custom',
+      distanciaKm: customDelivery.distanceKm,
+      tempoEstimado: customDelivery.estimatedMinutes
     });
   };
 
@@ -170,16 +207,31 @@ export const AddressConfirmationModal = ({
                       )}
                       <p><strong>Bairro:</strong> {profileAddress?.bairro}</p>
                       
-                      {isProfileBairroValid ? (
-                        <p className="text-primary font-medium mt-2">
-                          Taxa de entrega: R$ {profileBairroFee?.toFixed(2)}
-                        </p>
-                      ) : (
+                      {isCalculating && addressOption === 'profile' ? (
+                        <div className="flex items-center gap-2 mt-2 text-primary">
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          <span>Calculando taxa de entrega...</span>
+                        </div>
+                      ) : profileDelivery?.success ? (
+                        <div className="mt-3 p-3 bg-primary/10 rounded-lg space-y-1">
+                          <div className="flex items-center gap-2 text-primary font-medium">
+                            <Ruler className="h-4 w-4" />
+                            <span>Distância: {profileDelivery.distanceKm?.toFixed(1)} km</span>
+                          </div>
+                          <div className="flex items-center gap-2 text-primary font-medium">
+                            <Clock className="h-4 w-4" />
+                            <span>Tempo estimado: ~{profileDelivery.estimatedMinutes} min</span>
+                          </div>
+                          <p className="text-lg font-bold text-primary">
+                            Taxa de entrega: R$ {profileDelivery.deliveryFee?.toFixed(2)}
+                          </p>
+                        </div>
+                      ) : profileDelivery?.error ? (
                         <div className="flex items-center gap-2 mt-2 text-destructive">
                           <AlertCircle className="h-4 w-4" />
-                          <span>Infelizmente ainda não entregamos nessa região.</span>
+                          <span>{profileDelivery.error}</span>
                         </div>
-                      )}
+                      ) : null}
                     </div>
                   ) : (
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -190,7 +242,7 @@ export const AddressConfirmationModal = ({
                 </Label>
               </div>
               
-              {addressOption === 'profile' && hasValidProfileAddress && isProfileBairroValid && (
+              {addressOption === 'profile' && hasValidProfileAddress && profileDelivery?.success && (
                 <Button 
                   onClick={handleConfirmProfileAddress}
                   className="w-full mt-4"
@@ -220,34 +272,16 @@ export const AddressConfirmationModal = ({
 
               {addressOption === 'custom' && (
                 <div className="space-y-4 mt-4 pt-4 border-t">
-                  {/* Bairro Select */}
-                  <div className="space-y-2">
-                    <Label htmlFor="customBairro">Bairro *</Label>
-                    <Select value={customBairro} onValueChange={setCustomBairro}>
-                      <SelectTrigger id="customBairro">
-                        <SelectValue placeholder="Selecione o bairro" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {loadingBairros ? (
-                          <SelectItem value="loading" disabled>Carregando...</SelectItem>
-                        ) : (
-                          bairros.map((bairro) => (
-                            <SelectItem key={bairro.id} value={bairro.nome}>
-                              {bairro.nome} - R$ {bairro.taxa_entrega.toFixed(2)}
-                            </SelectItem>
-                          ))
-                        )}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
                   {/* Rua */}
                   <div className="space-y-2">
                     <Label htmlFor="customRua">Rua *</Label>
                     <Input
                       id="customRua"
                       value={customRua}
-                      onChange={(e) => setCustomRua(e.target.value)}
+                      onChange={(e) => {
+                        setCustomRua(e.target.value);
+                        setCustomDelivery(null);
+                      }}
                       placeholder="Nome da rua"
                     />
                   </div>
@@ -258,8 +292,25 @@ export const AddressConfirmationModal = ({
                     <Input
                       id="customNumero"
                       value={customNumero}
-                      onChange={(e) => setCustomNumero(e.target.value)}
+                      onChange={(e) => {
+                        setCustomNumero(e.target.value);
+                        setCustomDelivery(null);
+                      }}
                       placeholder="Número"
+                    />
+                  </div>
+
+                  {/* Bairro */}
+                  <div className="space-y-2">
+                    <Label htmlFor="customBairro">Bairro *</Label>
+                    <Input
+                      id="customBairro"
+                      value={customBairro}
+                      onChange={(e) => {
+                        setCustomBairro(e.target.value);
+                        setCustomDelivery(null);
+                      }}
+                      placeholder="Nome do bairro"
                     />
                   </div>
 
@@ -274,19 +325,56 @@ export const AddressConfirmationModal = ({
                     />
                   </div>
 
-                  {customBairro && customBairroFee !== null && (
-                    <p className="text-primary font-medium">
-                      Taxa de entrega: R$ {customBairroFee.toFixed(2)}
-                    </p>
+                  {/* Calculate Button */}
+                  {!customDelivery && (
+                    <Button 
+                      onClick={handleCalculateCustomDelivery}
+                      variant="outline"
+                      className="w-full"
+                      disabled={!isCustomFormValid || isCalculating}
+                    >
+                      {isCalculating ? (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                          Calculando...
+                        </>
+                      ) : (
+                        'Calcular taxa de entrega'
+                      )}
+                    </Button>
+                  )}
+
+                  {/* Delivery Result */}
+                  {customDelivery?.success && (
+                    <div className="p-3 bg-primary/10 rounded-lg space-y-1">
+                      <div className="flex items-center gap-2 text-primary font-medium">
+                        <Ruler className="h-4 w-4" />
+                        <span>Distância: {customDelivery.distanceKm?.toFixed(1)} km</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-primary font-medium">
+                        <Clock className="h-4 w-4" />
+                        <span>Tempo estimado: ~{customDelivery.estimatedMinutes} min</span>
+                      </div>
+                      <p className="text-lg font-bold text-primary">
+                        Taxa de entrega: R$ {customDelivery.deliveryFee?.toFixed(2)}
+                      </p>
+                    </div>
+                  )}
+
+                  {customDelivery?.error && (
+                    <div className="flex items-center gap-2 p-3 bg-destructive/10 rounded-lg text-destructive">
+                      <AlertCircle className="h-4 w-4" />
+                      <span>{customDelivery.error}</span>
+                    </div>
                   )}
 
                   <Button 
                     onClick={handleConfirmCustomAddress}
                     className="w-full"
                     size="lg"
-                    disabled={!isCustomFormValid}
+                    disabled={!customDelivery?.success}
                   >
-                    Confirmar novo endereço
+                    Confirmar endereço
                   </Button>
                 </div>
               )}

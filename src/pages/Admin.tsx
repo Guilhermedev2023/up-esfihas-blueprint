@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { LogOut, Package, MapPin, Settings, Clock } from 'lucide-react';
 import AdminProdutos from '@/components/admin/AdminProdutos';
-import AdminBairros from '@/components/admin/AdminBairros';
+import AdminEntregas from '@/components/admin/AdminEntregas';
 import AdminHorario from '@/components/admin/AdminHorario';
 
 const Admin = () => {
@@ -71,7 +71,7 @@ const Admin = () => {
           </TabsContent>
 
           <TabsContent value="bairros">
-            <AdminBairros />
+            <AdminEntregas />
           </TabsContent>
 
           <TabsContent value="horario">

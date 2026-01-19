@@ -41,6 +41,108 @@ export type Database = {
         }
         Relationships: []
       }
+      cache_distancias: {
+        Row: {
+          created_at: string
+          distancia_km: number
+          duracao_segundos: number | null
+          endereco_destino: string
+          expires_at: string
+          id: string
+          latitude: number
+          longitude: number
+        }
+        Insert: {
+          created_at?: string
+          distancia_km: number
+          duracao_segundos?: number | null
+          endereco_destino: string
+          expires_at?: string
+          id?: string
+          latitude: number
+          longitude: number
+        }
+        Update: {
+          created_at?: string
+          distancia_km?: number
+          duracao_segundos?: number | null
+          endereco_destino?: string
+          expires_at?: string
+          id?: string
+          latitude?: number
+          longitude?: number
+        }
+        Relationships: []
+      }
+      configuracao_restaurante: {
+        Row: {
+          cep: string
+          cidade: string
+          created_at: string
+          endereco: string
+          estado: string
+          id: string
+          latitude: number | null
+          longitude: number | null
+          updated_at: string
+        }
+        Insert: {
+          cep?: string
+          cidade?: string
+          created_at?: string
+          endereco?: string
+          estado?: string
+          id?: string
+          latitude?: number | null
+          longitude?: number | null
+          updated_at?: string
+        }
+        Update: {
+          cep?: string
+          cidade?: string
+          created_at?: string
+          endereco?: string
+          estado?: string
+          id?: string
+          latitude?: number | null
+          longitude?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      faixas_entrega: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          distancia_max_km: number
+          distancia_min_km: number
+          id: string
+          taxa_entrega: number
+          tempo_estimado_min: number
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          distancia_max_km: number
+          distancia_min_km?: number
+          id?: string
+          taxa_entrega: number
+          tempo_estimado_min?: number
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          distancia_max_km?: number
+          distancia_min_km?: number
+          id?: string
+          taxa_entrega?: number
+          tempo_estimado_min?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       horario_funcionamento: {
         Row: {
           ativo: boolean | null
@@ -221,6 +323,33 @@ export type Database = {
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
           user_id?: string
+        }
+        Relationships: []
+      }
+      zonas_entrega: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          id: string
+          nome: string
+          poligono: Json
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          id?: string
+          nome?: string
+          poligono?: Json
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          id?: string
+          nome?: string
+          poligono?: Json
+          updated_at?: string
         }
         Relationships: []
       }
