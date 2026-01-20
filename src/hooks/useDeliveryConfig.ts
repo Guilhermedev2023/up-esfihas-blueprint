@@ -41,7 +41,17 @@ export interface DeliveryCalculation {
   deliveryFee?: number;
   withinZone?: boolean;
   error?: string;
+  errorCode?: string;
 }
+
+// Error messages for user-friendly display
+const ERROR_MESSAGES: Record<string, string> = {
+  ENDERECO_INVALIDO: "Não foi possível encontrar o endereço informado. Verifique e tente novamente.",
+  FORA_AREA_ENTREGA: "Este endereço está fora da nossa área de entrega.",
+  FAIXA_NAO_ENCONTRADA: "Não conseguimos calcular a taxa para esta distância.",
+  GOOGLE_API_ERROR: "Erro ao consultar serviço de mapas. Tente novamente.",
+  CONFIG_ERROR: "Erro de configuração do sistema. Entre em contato conosco.",
+};
 
 // Hook for restaurant configuration
 export const useConfiguracaoRestaurante = () => {
@@ -201,25 +211,59 @@ export const useUpdateZonaEntrega = () => {
   });
 };
 
-// Calculate delivery fee function
+/**
+ * Calculate delivery fee for a given address
+ * Returns detailed information including distance, fee, and estimated time
+ */
 export const calculateDeliveryFee = async (address: string): Promise<DeliveryCalculation> => {
   try {
+    if (!address || address.trim().length < 5) {
+      return {
+        success: false,
+        error: 'Endereço muito curto. Informe o endereço completo.',
+        errorCode: 'ENDERECO_INVALIDO',
+      };
+    }
+
     const { data, error } = await supabase.functions.invoke('calculate-delivery', {
-      body: { address },
+      body: { address: address.trim() },
     });
 
-    if (error) throw error;
+    if (error) {
+      console.error('Supabase function error:', error);
+      return {
+        success: false,
+        error: 'Erro ao conectar com o serviço. Tente novamente.',
+        errorCode: 'CONNECTION_ERROR',
+      };
+    }
+
+    // Handle error response from edge function
+    if (!data.success) {
+      const userFriendlyMessage = data.errorCode && ERROR_MESSAGES[data.errorCode]
+        ? ERROR_MESSAGES[data.errorCode]
+        : data.error || 'Erro ao calcular taxa de entrega.';
+      
+      return {
+        ...data,
+        error: userFriendlyMessage,
+      };
+    }
+
     return data as DeliveryCalculation;
   } catch (error) {
     console.error('Error calculating delivery:', error);
     return {
       success: false,
       error: 'Erro ao calcular taxa de entrega. Tente novamente.',
+      errorCode: 'UNEXPECTED_ERROR',
     };
   }
 };
 
-// Geocode address function
+/**
+ * Geocode an address using the backend function
+ */
 export const geocodeAddress = async (address: string) => {
   try {
     const { data, error } = await supabase.functions.invoke('geocode-address', {
