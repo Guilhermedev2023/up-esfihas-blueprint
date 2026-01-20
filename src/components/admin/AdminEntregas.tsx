@@ -8,7 +8,8 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
-import { Loader2, Pencil, Plus, Trash2, MapPin, Clock, DollarSign, Ruler } from 'lucide-react';
+import { Loader2, Pencil, Plus, Trash2, MapPin, Clock, DollarSign, Ruler, Map } from 'lucide-react';
+import { DeliveryMap } from './DeliveryMap';
 import {
   useFaixasEntrega,
   useCreateFaixaEntrega,
@@ -171,8 +172,12 @@ const AdminEntregas = () => {
   return (
     <div className="space-y-6">
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full max-w-md grid-cols-2">
+        <TabsList className="grid w-full max-w-lg grid-cols-3">
           <TabsTrigger value="faixas">Faixas de Distância</TabsTrigger>
+          <TabsTrigger value="mapa" className="flex items-center gap-1">
+            <Map className="h-4 w-4" />
+            Mapa
+          </TabsTrigger>
           <TabsTrigger value="config">Configuração</TabsTrigger>
         </TabsList>
 
@@ -328,6 +333,10 @@ const AdminEntregas = () => {
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="mapa" className="space-y-4">
+          <DeliveryMap config={config} faixas={faixas} />
         </TabsContent>
 
         <TabsContent value="config" className="space-y-4">
