@@ -39,7 +39,7 @@ export const DeliveryMap = ({ config, faixas }: DeliveryMapProps) => {
     }
 
     const script = document.createElement('script');
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY || ''}&callback=initDeliveryMap`;
+    script.src = `https://maps.googleapis.com/maps/api/js?key=AIzaSyAIGrAwT7IVVksCaB9tr7m_rjXbUYQ17Uw&callback=initDeliveryMap`;
     script.async = true;
     script.defer = true;
 
