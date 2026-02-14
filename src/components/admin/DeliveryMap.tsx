@@ -29,12 +29,13 @@ export const DeliveryMap = ({ config, faixas }: DeliveryMapProps) => {
   const mapRef = useRef<HTMLDivElement>(null);
   const [map, setMap] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [scriptLoaded, setScriptLoaded] = useState(false);
   const circlesRef = useRef<any[]>([]);
 
-  // Load Google Maps script
+  // Load Google Maps script once
   useEffect(() => {
     if (window.google?.maps) {
-      initMap();
+      setScriptLoaded(true);
       return;
     }
 
@@ -44,7 +45,7 @@ export const DeliveryMap = ({ config, faixas }: DeliveryMapProps) => {
     script.defer = true;
 
     window.initDeliveryMap = () => {
-      initMap();
+      setScriptLoaded(true);
     };
 
     document.head.appendChild(script);
@@ -54,11 +55,13 @@ export const DeliveryMap = ({ config, faixas }: DeliveryMapProps) => {
     };
   }, []);
 
-  const initMap = () => {
+  // Initialize map when script is loaded AND config is available
+  useEffect(() => {
+    if (!scriptLoaded || !window.google?.maps) return;
     if (!mapRef.current || !config?.latitude || !config?.longitude) {
-      setIsLoading(false);
       return;
     }
+    if (map) return; // Already initialized
 
     const restaurantLocation = {
       lat: config.latitude,
@@ -90,7 +93,7 @@ export const DeliveryMap = ({ config, faixas }: DeliveryMapProps) => {
 
     setMap(mapInstance);
     setIsLoading(false);
-  };
+  }, [scriptLoaded, config, map]);
 
   // Draw circles when map or faixas change
   useEffect(() => {
@@ -163,13 +166,16 @@ export const DeliveryMap = ({ config, faixas }: DeliveryMapProps) => {
           <div className="h-[400px] flex items-center justify-center bg-muted rounded-lg">
             <p className="text-muted-foreground">Configure as coordenadas do restaurante para visualizar o mapa</p>
           </div>
-        ) : isLoading ? (
-          <div className="h-[400px] flex items-center justify-center bg-muted rounded-lg">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          </div>
         ) : (
           <>
-            <div ref={mapRef} className="h-[400px] w-full rounded-lg" />
+            <div className="relative">
+              <div ref={mapRef} className="h-[400px] w-full rounded-lg" />
+              {isLoading && (
+                <div className="absolute inset-0 flex items-center justify-center bg-muted rounded-lg">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                </div>
+              )}
+            </div>
             
             {/* Legend */}
             <div className="mt-4 flex flex-wrap gap-2">
