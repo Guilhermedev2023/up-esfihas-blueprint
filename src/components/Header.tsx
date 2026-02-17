@@ -19,7 +19,7 @@ export const Header = () => {
     <header className="sticky top-0 z-50 w-full bg-card border-b border-border shadow-sm">
       <div className="container mx-auto flex h-14 items-center justify-between px-4">
         <Link to="/home" className="flex items-center gap-2">
-          <span className="text-lg font-bold text-foreground">UP ESFIHAS</span>
+          <span className="text-lg font-bold text-foreground">UP ESFIHAS ARTESANAIS</span>
         </Link>
 
         <div className="flex items-center gap-3">
