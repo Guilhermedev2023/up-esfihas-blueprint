@@ -4,10 +4,11 @@ import { useAdmin } from '@/hooks/useAdmin';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import { LogOut, Package, MapPin, Settings, Clock } from 'lucide-react';
+import { LogOut, Package, MapPin, Settings, Clock, Image } from 'lucide-react';
 import AdminProdutos from '@/components/admin/AdminProdutos';
 import AdminEntregas from '@/components/admin/AdminEntregas';
 import AdminHorario from '@/components/admin/AdminHorario';
+import AdminBanner from '@/components/admin/AdminBanner';
 
 const Admin = () => {
   const { user, signOut } = useAdmin();
@@ -51,7 +52,7 @@ const Admin = () => {
       {/* Main Content */}
       <main className="container mx-auto px-4 py-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full max-w-lg grid-cols-3">
+          <TabsList className="grid w-full max-w-2xl grid-cols-4">
             <TabsTrigger value="produtos" className="flex items-center gap-2">
               <Package className="h-4 w-4" />
               Cardápio
@@ -63,6 +64,10 @@ const Admin = () => {
             <TabsTrigger value="horario" className="flex items-center gap-2">
               <Clock className="h-4 w-4" />
               Horário
+            </TabsTrigger>
+            <TabsTrigger value="banner" className="flex items-center gap-2">
+              <Image className="h-4 w-4" />
+              Banner
             </TabsTrigger>
           </TabsList>
 
@@ -76,6 +81,10 @@ const Admin = () => {
 
           <TabsContent value="horario">
             <AdminHorario />
+          </TabsContent>
+
+          <TabsContent value="banner">
+            <AdminBanner />
           </TabsContent>
         </Tabs>
       </main>

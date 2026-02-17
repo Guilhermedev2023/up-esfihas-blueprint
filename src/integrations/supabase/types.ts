@@ -41,6 +41,47 @@ export type Database = {
         }
         Relationships: []
       }
+      banner_promocional: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          id: string
+          imagem_url: string | null
+          produto_id: string | null
+          titulo: string | null
+          updated_at: string
+          valor_promocional: number | null
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          id?: string
+          imagem_url?: string | null
+          produto_id?: string | null
+          titulo?: string | null
+          updated_at?: string
+          valor_promocional?: number | null
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          id?: string
+          imagem_url?: string | null
+          produto_id?: string | null
+          titulo?: string | null
+          updated_at?: string
+          valor_promocional?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "banner_promocional_produto_id_fkey"
+            columns: ["produto_id"]
+            isOneToOne: false
+            referencedRelation: "produtos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cache_distancias: {
         Row: {
           created_at: string

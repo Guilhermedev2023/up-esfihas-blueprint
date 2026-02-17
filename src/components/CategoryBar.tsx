@@ -21,7 +21,7 @@ export const CategoryBar = ({ selectedCategory, onSelectCategory }: CategoryBarP
               <button
                 key={category}
                 onClick={() => onSelectCategory(category === 'Todas' ? null : category)}
-                className={`flex flex-col items-center gap-1 min-w-[80px] sm:min-w-[100px] rounded-xl px-3 py-2 text-xs font-medium transition-all ${
+                className={`flex flex-col items-center justify-center gap-1 w-[80px] sm:w-[90px] h-[76px] sm:h-[84px] rounded-xl px-2 py-2 text-xs font-medium transition-all flex-shrink-0 ${
                   isSelected
                     ? 'bg-primary text-primary-foreground shadow-md'
                     : 'bg-muted text-muted-foreground hover:bg-muted/80'
@@ -30,9 +30,9 @@ export const CategoryBar = ({ selectedCategory, onSelectCategory }: CategoryBarP
                 <img 
                   src={categoryImages[category]} 
                   alt={category}
-                  className="h-10 w-10 rounded-full object-cover border-2 border-white/20"
+                  className="h-10 w-10 rounded-full object-cover border-2 border-white/20 flex-shrink-0"
                 />
-                <span className="text-center leading-tight whitespace-normal">
+                <span className="text-center leading-tight whitespace-nowrap text-[11px]">
                   {category}
                 </span>
               </button>

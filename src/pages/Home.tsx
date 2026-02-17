@@ -3,8 +3,10 @@ import { Header } from '@/components/Header';
 import { ProductCard } from '@/components/ProductCard';
 import { CategoryBar } from '@/components/CategoryBar';
 import { CategoryBanner } from '@/components/CategoryBanner';
+import { PromoBanner } from '@/components/PromoBanner';
 import { FloatingCart } from '@/components/FloatingCart';
 import { HeroSlider } from '@/components/HeroSlider';
+import { Footer } from '@/components/Footer';
 import { categories, categoryBanners } from '@/data/products';
 import { useProdutos, Produto } from '@/hooks/useProdutos';
 import { Loader2 } from 'lucide-react';
@@ -42,6 +44,9 @@ const Home = () => {
         selectedCategory={selectedCategory} 
         onSelectCategory={handleCategoryChange} 
       />
+
+      {/* Promotional Banner */}
+      <PromoBanner />
 
       {/* Menu Section */}
       <section className="pt-6">
@@ -97,15 +102,7 @@ const Home = () => {
       </section>
 
       {/* Footer */}
-      <footer className="mt-12 bg-primary py-8 text-primary-foreground">
-        <div className="container mx-auto px-4 text-center">
-          <h4 className="text-xl font-bold">UP Esfihas Artesanais</h4>
-          <p className="mt-2 text-sm opacity-90">Sabor que eleva sua fome!</p>
-          <p className="mt-2 text-sm opacity-75">WhatsApp: (48) 99150-6966</p>
-          <p className="mt-1 text-sm opacity-75">Todos os dias, das 18h às 00h</p>
-          <p className="mt-4 text-xs opacity-60">2025 UP Esfihas Artesanais</p>
-        </div>
-      </footer>
+      <Footer />
 
       {/* Floating Cart */}
       <FloatingCart />

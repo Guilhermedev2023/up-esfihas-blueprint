@@ -5,10 +5,13 @@ import { useCart } from '@/contexts/CartContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { getDeliveryFee } from '@/utils/deliveryFees';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Minus, Trash2, ShoppingBag } from 'lucide-react';
+import { Plus, Minus, Trash2, ShoppingBag, AlertCircle } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+
+const VALOR_MINIMO_PEDIDO = 15;
 
 const Carrinho = () => {
   const { items, updateQuantity, removeFromCart, clearCart, total, deliveryFee, setDeliveryFee } = useCart();
@@ -184,10 +187,20 @@ const Carrinho = () => {
                   </div>
                 </div>
 
+                {total < VALOR_MINIMO_PEDIDO && (
+                  <Alert variant="destructive" className="mt-2">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription>
+                      O valor mínimo para pedidos é de R$ {VALOR_MINIMO_PEDIDO.toFixed(2)}.
+                    </AlertDescription>
+                  </Alert>
+                )}
+
                 <Button
                   onClick={() => navigate('/pagamento')}
                   className="mt-6 w-full"
                   size="lg"
+                  disabled={total < VALOR_MINIMO_PEDIDO}
                 >
                   Continuar para Pagamento
                 </Button>

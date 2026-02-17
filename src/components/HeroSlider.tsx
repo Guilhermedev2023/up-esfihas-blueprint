@@ -42,10 +42,10 @@ export const HeroSlider = () => {
           className="h-24 w-24 rounded-full border-4 border-primary object-cover shadow-2xl sm:h-32 sm:w-32"
         />
         <h1 className="mt-4 text-center text-2xl font-bold text-white drop-shadow-lg sm:text-3xl">
-          Esfihas Artesanais
+          UP Esfihas Artesanais
         </h1>
-        <p className="mt-1 text-center text-white/90 drop-shadow-md">
-          Rápido, Quente e Saboroso
+        <p className="mt-1 text-center text-white/90 drop-shadow-md italic">
+          A experiência da esfiha perfeita, sem sair de casa.
         </p>
         <div className="mt-4">
           <StoreStatus />
