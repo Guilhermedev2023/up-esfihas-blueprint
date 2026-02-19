@@ -17,12 +17,12 @@ const Home = () => {
   const { data: produtos, isLoading } = useProdutos(false); // Only active products
 
   const filteredProducts = selectedCategory
-    ? produtos?.filter(p => p.categoria === selectedCategory) || []
-    : produtos || [];
+    ? (produtos?.filter(p => p.categoria === selectedCategory) || []).sort((a, b) => a.preco - b.preco)
+    : (produtos || []).sort((a, b) => a.preco - b.preco);
 
   // Group products by category for "Todas" view
   const productsByCategory = categories.reduce((acc, category) => {
-    acc[category] = produtos?.filter(p => p.categoria === category) || [];
+    acc[category] = (produtos?.filter(p => p.categoria === category) || []).sort((a, b) => a.preco - b.preco);
     return acc;
   }, {} as Record<string, Produto[]>);
 
