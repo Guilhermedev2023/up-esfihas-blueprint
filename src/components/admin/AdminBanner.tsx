@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useBannerPromocional, useUpdateBanner } from '@/hooks/useBannerPromocional';
 import { useProdutos } from '@/hooks/useProdutos';
+import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,7 +9,10 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Loader2, Image, Save } from 'lucide-react';
+import { Loader2, Image as ImageIcon, Save, Upload, X } from 'lucide-react';
+
+const ACCEPTED_FORMATS = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp'];
+const MAX_FILE_SIZE = 5 * 1024 * 1024;
 
 const AdminBanner = () => {
   const { data: banner, isLoading } = useBannerPromocional();
@@ -20,6 +24,9 @@ const AdminBanner = () => {
   const [imagemUrl, setImagemUrl] = useState('');
   const [produtoId, setProdutoId] = useState('');
   const [valorPromocional, setValorPromocional] = useState('');
+  const [isUploading, setIsUploading] = useState(false);
+  const [isDragOver, setIsDragOver] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (banner) {
@@ -30,6 +37,52 @@ const AdminBanner = () => {
       setValorPromocional(banner.valor_promocional?.toString() || '');
     }
   }, [banner]);
+
+  const uploadImage = async (file: File) => {
+    if (!ACCEPTED_FORMATS.includes(file.type)) {
+      toast.error('Formato não aceito. Use PNG, JPG ou WebP.');
+      return;
+    }
+    if (file.size > MAX_FILE_SIZE) {
+      toast.error('Arquivo muito grande. Máximo 5MB.');
+      return;
+    }
+
+    setIsUploading(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `banner-${Date.now()}.${fileExt}`;
+      const filePath = `banners/${fileName}`;
+
+      const { error } = await supabase.storage
+        .from('product-images')
+        .upload(filePath, file, { cacheControl: '3600', upsert: false });
+
+      if (error) throw error;
+
+      const { data } = supabase.storage.from('product-images').getPublicUrl(filePath);
+      setImagemUrl(data.publicUrl);
+      toast.success('Imagem carregada!');
+    } catch {
+      toast.error('Erro ao fazer upload da imagem');
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) uploadImage(file);
+  };
+
+  const handleDragOver = useCallback((e: React.DragEvent) => { e.preventDefault(); setIsDragOver(true); }, []);
+  const handleDragLeave = useCallback((e: React.DragEvent) => { e.preventDefault(); setIsDragOver(false); }, []);
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) uploadImage(file);
+  }, []);
 
   const handleSave = async () => {
     if (!banner) return;
@@ -60,7 +113,7 @@ const AdminBanner = () => {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <Image className="h-5 w-5" />
+          <ImageIcon className="h-5 w-5" />
           Banner Promocional
         </CardTitle>
       </CardHeader>
@@ -75,11 +128,48 @@ const AdminBanner = () => {
           <Input id="titulo" value={titulo} onChange={(e) => setTitulo(e.target.value)} placeholder="Ex: Promoção Especial" />
         </div>
 
+        {/* Image upload */}
         <div>
-          <Label htmlFor="imagem">URL da imagem (opcional)</Label>
-          <Input id="imagem" value={imagemUrl} onChange={(e) => setImagemUrl(e.target.value)} placeholder="https://... ou /images/..." />
-          {imagemUrl && (
-            <img src={imagemUrl} alt="Preview" className="mt-2 h-20 rounded-lg object-cover" />
+          <Label>Imagem do banner</Label>
+          <input ref={fileInputRef} type="file" accept=".png,.jpg,.jpeg,.webp" onChange={handleFileChange} className="hidden" />
+
+          {imagemUrl ? (
+            <div className="mt-2 space-y-2">
+              <div className="relative w-full rounded-lg overflow-hidden border border-border">
+                <img src={imagemUrl} alt="Preview" className="w-full h-auto object-cover max-h-48" />
+                {isUploading && (
+                  <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                    <Loader2 className="h-8 w-8 animate-spin text-white" />
+                  </div>
+                )}
+              </div>
+              <div className="flex gap-2">
+                <Button type="button" variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} disabled={isUploading}>
+                  <Upload className="h-4 w-4 mr-2" /> Substituir
+                </Button>
+                <Button type="button" variant="destructive" size="sm" onClick={() => setImagemUrl('')} disabled={isUploading}>
+                  <X className="h-4 w-4 mr-2" /> Remover
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div
+              onClick={() => fileInputRef.current?.click()}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+              className={`mt-2 cursor-pointer rounded-lg border-2 border-dashed p-6 flex flex-col items-center gap-2 transition-colors min-h-[120px] ${isDragOver ? 'border-primary bg-primary/10' : 'border-muted-foreground/30 hover:border-primary/50 hover:bg-muted/50'} ${isUploading ? 'pointer-events-none opacity-60' : ''}`}
+            >
+              {isUploading ? (
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              ) : (
+                <>
+                  <Upload className="h-8 w-8 text-muted-foreground" />
+                  <p className="text-sm text-muted-foreground text-center">Arraste a imagem ou clique para selecionar</p>
+                  <p className="text-xs text-muted-foreground">PNG, JPG ou WebP (máx. 5MB)</p>
+                </>
+              )}
+            </div>
           )}
         </div>
 
