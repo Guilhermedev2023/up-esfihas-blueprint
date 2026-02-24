@@ -24,6 +24,8 @@ export const useBannerPromocional = () => {
       if (error) throw error;
       return data as unknown as BannerPromocional;
     },
+    refetchInterval: 30000, // Refresh every 30s to catch admin changes
+    staleTime: 10000,
   });
 };
 

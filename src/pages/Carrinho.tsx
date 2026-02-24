@@ -10,6 +10,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useStoreOpen } from '@/hooks/useStoreOpen';
+import { ClosedStoreMessage } from '@/components/ClosedStoreMessage';
 
 const VALOR_MINIMO_PEDIDO = 15;
 
@@ -17,6 +19,7 @@ const Carrinho = () => {
   const { items, updateQuantity, removeFromCart, clearCart, total, deliveryFee, setDeliveryFee } = useCart();
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { data: isOpen = true } = useStoreOpen();
   const [observacoes, setObservacoes] = useState('');
 
   useEffect(() => {
@@ -187,7 +190,13 @@ const Carrinho = () => {
                   </div>
                 </div>
 
-                {total < VALOR_MINIMO_PEDIDO && (
+                {!isOpen && (
+                  <div className="mt-2">
+                    <ClosedStoreMessage />
+                  </div>
+                )}
+
+                {isOpen && total < VALOR_MINIMO_PEDIDO && (
                   <Alert variant="destructive" className="mt-2">
                     <AlertCircle className="h-4 w-4" />
                     <AlertDescription>
@@ -200,9 +209,9 @@ const Carrinho = () => {
                   onClick={() => navigate('/pagamento')}
                   className="mt-6 w-full"
                   size="lg"
-                  disabled={total < VALOR_MINIMO_PEDIDO}
+                  disabled={!isOpen || total < VALOR_MINIMO_PEDIDO}
                 >
-                  Continuar para Pagamento
+                  {isOpen ? 'Continuar para Pagamento' : '🔴 Delivery Fechado'}
                 </Button>
               </CardContent>
             </Card>
