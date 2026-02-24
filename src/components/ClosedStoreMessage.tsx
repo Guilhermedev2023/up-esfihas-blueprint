@@ -6,8 +6,7 @@ export const ClosedStoreMessage = () => {
     <Alert variant="destructive" className="border-2">
       <AlertCircle className="h-5 w-5" />
       <AlertDescription className="text-base">
-        😔 Hoje o delivery não está funcionando.<br />
-        Nosso atendimento não abre neste momento.<br />
+        😔 Hoje não estamos atendendo.<br />
         Volte em breve ❤️
       </AlertDescription>
     </Alert>
