@@ -11,6 +11,8 @@ import { QrCode, Truck, Copy, CheckCircle2, MapPin } from 'lucide-react';
 import { generateWhatsAppMessage, sendToWhatsApp } from '@/utils/whatsappMessage';
 import { toast } from 'sonner';
 import { AddressConfirmationModal, ConfirmedAddress } from '@/components/AddressConfirmationModal';
+import { useStoreOpen } from '@/hooks/useStoreOpen';
+import { ClosedStoreMessage } from '@/components/ClosedStoreMessage';
 
 const pixCode = '00020126740014BR.GOV.BCB.PIX0114436060510001740234linknabio.gg/christopher-rubin-6235204000053039865802BR5921CHRISTOPHER-RUBIN-6236009SAO PAULO62070503***6304CFF6';
 
@@ -23,6 +25,7 @@ const Pagamento = () => {
   const [pixCopiado, setPixCopiado] = useState(false);
   const [showAddressModal, setShowAddressModal] = useState(false);
   const [confirmedAddress, setConfirmedAddress] = useState<ConfirmedAddress | null>(null);
+  const { data: isOpen = true } = useStoreOpen();
 
   // Get observacoes from localStorage
   const [observacoes, setObservacoes] = useState('');
@@ -74,6 +77,11 @@ const Pagamento = () => {
   };
 
   const handleFinalizarClick = () => {
+    if (!isOpen) {
+      toast.error('😔 O delivery está fechado no momento.');
+      return;
+    }
+
     if (!metodoPagamento) {
       toast.error('Selecione uma forma de pagamento');
       return;
@@ -120,6 +128,11 @@ const Pagamento = () => {
       <Header />
 
       <div className="container mx-auto max-w-5xl px-4 py-8">
+        {!isOpen && (
+          <div className="mb-6">
+            <ClosedStoreMessage />
+          </div>
+        )}
         <div className="grid gap-8 lg:grid-cols-3">
           {/* Área de seleção de pagamento */}
           <div className="lg:col-span-2 space-y-6">

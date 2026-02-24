@@ -188,28 +188,34 @@ export type Database = {
         Row: {
           ativo: boolean | null
           created_at: string | null
+          dias_abertos: Json
           dias_semana: string
           hora_abertura: string
           hora_fechamento: string
           id: string
+          override_manual: string | null
           updated_at: string | null
         }
         Insert: {
           ativo?: boolean | null
           created_at?: string | null
+          dias_abertos?: Json
           dias_semana?: string
           hora_abertura?: string
           hora_fechamento?: string
           id?: string
+          override_manual?: string | null
           updated_at?: string | null
         }
         Update: {
           ativo?: boolean | null
           created_at?: string | null
+          dias_abertos?: Json
           dias_semana?: string
           hora_abertura?: string
           hora_fechamento?: string
           id?: string
+          override_manual?: string | null
           updated_at?: string | null
         }
         Relationships: []

@@ -7,6 +7,8 @@ export interface HorarioFuncionamento {
   hora_abertura: string;
   hora_fechamento: string;
   dias_semana: string;
+  dias_abertos: Record<string, boolean>;
+  override_manual: string | null;
   ativo: boolean;
   created_at: string;
   updated_at: string;
@@ -25,22 +27,36 @@ export const useHorarioFuncionamento = () => {
         .maybeSingle();
 
       if (error) throw error;
-      return data as HorarioFuncionamento | null;
+      if (!data) return null;
+      return {
+        ...data,
+        dias_abertos: (data.dias_abertos as Record<string, boolean>) ?? {
+          seg: true, ter: true, qua: true, qui: true, sex: true, sab: true, dom: true,
+        },
+        override_manual: (data.override_manual as string | null) ?? null,
+      } as HorarioFuncionamento;
     },
   });
 
   const updateHorario = useMutation({
-    mutationFn: async (updates: { hora_abertura: string; hora_fechamento: string; dias_semana: string }) => {
+    mutationFn: async (updates: {
+      hora_abertura: string;
+      hora_fechamento: string;
+      dias_semana: string;
+      dias_abertos?: Record<string, boolean>;
+      override_manual?: string | null;
+    }) => {
       if (!horario?.id) {
-        // Insert if no record exists
         const { data, error } = await supabase
           .from('horario_funcionamento')
           .insert({
             hora_abertura: updates.hora_abertura,
             hora_fechamento: updates.hora_fechamento,
             dias_semana: updates.dias_semana,
+            dias_abertos: updates.dias_abertos as any,
+            override_manual: updates.override_manual as any,
             ativo: true,
-          })
+          } as any)
           .select()
           .single();
 
@@ -54,7 +70,9 @@ export const useHorarioFuncionamento = () => {
           hora_abertura: updates.hora_abertura,
           hora_fechamento: updates.hora_fechamento,
           dias_semana: updates.dias_semana,
-        })
+          dias_abertos: updates.dias_abertos as any,
+          override_manual: updates.override_manual as any,
+        } as any)
         .eq('id', horario.id)
         .select()
         .single();
@@ -64,6 +82,7 @@ export const useHorarioFuncionamento = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['horario-funcionamento'] });
+      queryClient.invalidateQueries({ queryKey: ['store-open-status'] });
       toast.success('Horário de funcionamento atualizado!');
     },
     onError: (error) => {
@@ -72,10 +91,5 @@ export const useHorarioFuncionamento = () => {
     },
   });
 
-  return {
-    horario,
-    isLoading,
-    error,
-    updateHorario,
-  };
+  return { horario, isLoading, error, updateHorario };
 };
