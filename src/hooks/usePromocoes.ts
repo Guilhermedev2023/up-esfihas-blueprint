@@ -40,11 +40,11 @@ export function usePromocoes() {
   const { data: promocoes = [], ...query } = useQuery({
     queryKey: ['promocoes'],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('promocoes')
         .select('*');
       if (error) throw error;
-      return (data || []) as unknown as Promocao[];
+      return (data || []) as Promocao[];
     },
     refetchInterval: 30000,
   });
@@ -52,9 +52,9 @@ export function usePromocoes() {
   const updatePromocao = useMutation({
     mutationFn: async (updates: Partial<Promocao> & { id: string }) => {
       const { id, ...rest } = updates;
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('promocoes')
-        .update(rest as any)
+        .update(rest)
         .eq('id', id);
       if (error) throw error;
     },
