@@ -71,13 +71,13 @@ export function useCuponsUsuario(telefone: string | null | undefined) {
     queryKey: ['cupons', telefone],
     queryFn: async () => {
       if (!telefone) return [];
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('cupons_desconto')
         .select('*')
         .eq('telefone', telefone)
         .eq('usado', false);
       if (error) throw error;
-      return (data || []) as unknown as CupomDesconto[];
+      return (data || []) as CupomDesconto[];
     },
     enabled: !!telefone,
   });
