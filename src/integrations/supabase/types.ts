@@ -151,6 +151,36 @@ export type Database = {
         }
         Relationships: []
       }
+      cupons_desconto: {
+        Row: {
+          codigo: string
+          created_at: string
+          desconto_porcentagem: number
+          expires_at: string | null
+          id: string
+          telefone: string
+          usado: boolean
+        }
+        Insert: {
+          codigo: string
+          created_at?: string
+          desconto_porcentagem: number
+          expires_at?: string | null
+          id?: string
+          telefone: string
+          usado?: boolean
+        }
+        Update: {
+          codigo?: string
+          created_at?: string
+          desconto_porcentagem?: number
+          expires_at?: string | null
+          id?: string
+          telefone?: string
+          usado?: boolean
+        }
+        Relationships: []
+      }
       faixas_entrega: {
         Row: {
           ativo: boolean
