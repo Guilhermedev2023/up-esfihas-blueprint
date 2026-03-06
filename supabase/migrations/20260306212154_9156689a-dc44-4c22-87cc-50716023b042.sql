@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX idx_profiles_telefone_unique ON public.profiles (telefone) WHERE telefone IS NOT NULL AND telefone != '';

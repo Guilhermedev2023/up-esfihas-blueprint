@@ -61,6 +61,11 @@ const Cadastro = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    if (!formData.telefone.trim()) {
+      toast.error('O telefone é obrigatório');
+      return;
+    }
+
     if (!formData.endereco) {
       toast.error('O endereço é obrigatório');
       return;
@@ -87,6 +92,19 @@ const Cadastro = () => {
     }
 
     setLoading(true);
+
+    // Check for duplicate phone
+    const { data: existingPhone } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('telefone', formData.telefone.trim())
+      .limit(1);
+
+    if (existingPhone && existingPhone.length > 0) {
+      toast.error('Este número de telefone já está cadastrado em outra conta.');
+      setLoading(false);
+      return;
+    }
 
     const success = await register({
       nome: formData.nome,
