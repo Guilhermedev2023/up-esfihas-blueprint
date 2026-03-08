@@ -382,6 +382,54 @@ export type Database = {
         }
         Relationships: []
       }
+      promocoes: {
+        Row: {
+          aplicar_delivery: boolean
+          aplicar_retirada: boolean
+          ativo: boolean
+          created_at: string
+          desconto_porcentagem: number | null
+          desconto_valor: number | null
+          dias_semana: Json | null
+          id: string
+          tipo: string
+          tipo_desconto: string
+          updated_at: string
+          validade_dias: number | null
+          valor_minimo_pedido: number | null
+        }
+        Insert: {
+          aplicar_delivery?: boolean
+          aplicar_retirada?: boolean
+          ativo?: boolean
+          created_at?: string
+          desconto_porcentagem?: number | null
+          desconto_valor?: number | null
+          dias_semana?: Json | null
+          id?: string
+          tipo: string
+          tipo_desconto?: string
+          updated_at?: string
+          validade_dias?: number | null
+          valor_minimo_pedido?: number | null
+        }
+        Update: {
+          aplicar_delivery?: boolean
+          aplicar_retirada?: boolean
+          ativo?: boolean
+          created_at?: string
+          desconto_porcentagem?: number | null
+          desconto_valor?: number | null
+          dias_semana?: Json | null
+          id?: string
+          tipo?: string
+          tipo_desconto?: string
+          updated_at?: string
+          validade_dias?: number | null
+          valor_minimo_pedido?: number | null
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string | null
