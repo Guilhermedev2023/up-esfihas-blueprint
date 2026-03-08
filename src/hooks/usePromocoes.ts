@@ -11,6 +11,8 @@ export interface Promocao {
   valor_minimo_pedido: number | null;
   dias_semana: Record<string, boolean>;
   validade_dias: number | null;
+  aplicar_delivery: boolean;
+  aplicar_retirada: boolean;
 }
 
 export interface CupomDesconto {
