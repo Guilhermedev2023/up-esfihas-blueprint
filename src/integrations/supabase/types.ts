@@ -487,6 +487,10 @@ export type Database = {
         Args: { target_user_email: string }
         Returns: undefined
       }
+      contar_pedidos_por_telefone: {
+        Args: { _telefone: string }
+        Returns: number
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

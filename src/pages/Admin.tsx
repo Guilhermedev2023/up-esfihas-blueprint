@@ -4,12 +4,13 @@ import { useAdmin } from '@/hooks/useAdmin';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import { LogOut, Package, MapPin, Settings, Clock, Image, Gift } from 'lucide-react';
+import { LogOut, Package, MapPin, Settings, Clock, Image, Gift, DollarSign } from 'lucide-react';
 import AdminProdutos from '@/components/admin/AdminProdutos';
 import AdminEntregas from '@/components/admin/AdminEntregas';
 import AdminHorario from '@/components/admin/AdminHorario';
 import AdminBanner from '@/components/admin/AdminBanner';
 import AdminPromocoes from '@/components/admin/AdminPromocoes';
+import AdminFinanceiro from '@/components/admin/AdminFinanceiro';
 
 const Admin = () => {
   const { user, signOut } = useAdmin();
@@ -53,7 +54,7 @@ const Admin = () => {
       {/* Main Content */}
       <main className="container mx-auto px-4 py-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full max-w-3xl grid-cols-5">
+          <TabsList className="grid w-full max-w-4xl grid-cols-6">
             <TabsTrigger value="produtos" className="flex items-center gap-2">
               <Package className="h-4 w-4" />
               <span className="hidden sm:inline">Cardápio</span>
@@ -73,6 +74,10 @@ const Admin = () => {
             <TabsTrigger value="promocoes" className="flex items-center gap-2">
               <Gift className="h-4 w-4" />
               <span className="hidden sm:inline">Promoções</span>
+            </TabsTrigger>
+            <TabsTrigger value="financeiro" className="flex items-center gap-2">
+              <DollarSign className="h-4 w-4" />
+              <span className="hidden sm:inline">Financeiro</span>
             </TabsTrigger>
           </TabsList>
 
@@ -94,6 +99,10 @@ const Admin = () => {
 
           <TabsContent value="promocoes">
             <AdminPromocoes />
+          </TabsContent>
+
+          <TabsContent value="financeiro">
+            <AdminFinanceiro />
           </TabsContent>
         </Tabs>
       </main>
