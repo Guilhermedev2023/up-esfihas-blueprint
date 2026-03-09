@@ -90,22 +90,15 @@ export function useContarPedidosTelefone(telefone: string | null | undefined) {
     queryKey: ['pedidos_count', telefone],
     queryFn: async () => {
       if (!telefone) return 0;
-      // Count orders by looking at profiles with this phone that have orders
-      const { data: profiles } = await supabase
-        .from('profiles')
-        .select('user_id')
-        .eq('telefone', telefone);
+      // Use SECURITY DEFINER function to count orders by phone (bypasses RLS)
+      const { data, error } = await (supabase as any)
+        .rpc('contar_pedidos_por_telefone', { _telefone: telefone });
       
-      if (!profiles || profiles.length === 0) return 0;
-      
-      const userIds = profiles.map(p => p.user_id);
-      const { count, error } = await supabase
-        .from('pedidos')
-        .select('id', { count: 'exact', head: true })
-        .in('user_id', userIds);
-      
-      if (error) return 0;
-      return count || 0;
+      if (error) {
+        console.error('Error counting orders:', error);
+        return 0;
+      }
+      return data || 0;
     },
     enabled: !!telefone,
   });
