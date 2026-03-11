@@ -96,7 +96,7 @@ function usePedidosPeriodo(start: Date, end: Date) {
 }
 
 function usePedidosPeriodoAnterior(start: Date, end: Date) {
-  const prev = getPreviousPeriodRange(start, end);
+  const prev = useMemo(() => getPreviousPeriodRange(start, end), [start, end]);
   return useQuery({
     queryKey: ['financeiro_pedidos_prev', prev.start.toISOString(), prev.end.toISOString()],
     queryFn: async () => {
