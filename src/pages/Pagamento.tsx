@@ -20,7 +20,7 @@ const pixCode = '00020126740014BR.GOV.BCB.PIX0114436060510001740234linknabio.gg/
 
 const Pagamento = () => {
   const navigate = useNavigate();
-  const { items, deliveryFee, setDeliveryFee } = useCart();
+  const { items, deliveryFee, setDeliveryFee, clearCart } = useCart();
   const { user } = useAuth();
   const subtotal = items.reduce((sum, item) => sum + item.preco * item.quantidade, 0);
   const [metodoPagamento, setMetodoPagamento] = useState<'pix' | 'entrega' | ''>('');
@@ -29,6 +29,7 @@ const Pagamento = () => {
   const [confirmedAddress, setConfirmedAddress] = useState<ConfirmedAddress | null>(null);
   const { data: isOpen = true } = useStoreOpen();
   const [cupomGerado, setCupomGerado] = useState<string | null>(null);
+  const [salvandoPedido, setSalvandoPedido] = useState(false);
 
   // Promoções
   const { promocoes } = usePromocoes();
@@ -94,6 +95,63 @@ const Pagamento = () => {
     await (supabase as any).from('cupons_desconto').update({ usado: true }).eq('id', cupomId);
   };
 
+  // Generate next order number
+  const gerarNumeroPedido = async (): Promise<number> => {
+    const { data, error } = await supabase
+      .from('pedidos')
+      .select('numero')
+      .order('numero', { ascending: false })
+      .limit(1);
+    
+    if (error || !data || data.length === 0) return 1;
+    return (data[0].numero || 0) + 1;
+  };
+
+  // Save order to database
+  const salvarPedidoDB = async (address: ConfirmedAddress, recalcTaxa: number, recalcTotal: number): Promise<number | null> => {
+    try {
+      const numeroPedido = await gerarNumeroPedido();
+      
+      const pedidoData = {
+        numero: numeroPedido,
+        user_id: user?.id || null,
+        telefone: user?.telefone || '',
+        items: items.map(item => ({
+          id: item.id,
+          nome: item.nome,
+          preco: item.preco,
+          quantidade: item.quantidade,
+          categoria: item.categoria,
+        })),
+        subtotal,
+        taxa_entrega: recalcTaxa,
+        total: recalcTotal,
+        endereco: {
+          rua: address.rua,
+          numero: address.numero,
+          complemento: address.complemento || '',
+          bairro: address.bairro,
+        },
+        metodo_pagamento: metodoPagamento,
+        status: 'aguardando_confirmacao',
+      };
+
+      const { error } = await supabase
+        .from('pedidos')
+        .insert(pedidoData);
+
+      if (error) {
+        console.error('Erro ao salvar pedido:', error);
+        return null;
+      }
+
+      return numeroPedido;
+    } catch (err) {
+      console.error('Erro ao salvar pedido:', err);
+      return null;
+    }
+  };
+
   const handleFinalizarClick = () => {
     if (!isOpen) {
       toast.error('😔 O delivery está fechado no momento.');
@@ -114,6 +172,7 @@ const Pagamento = () => {
   const handleAddressConfirm = async (address: ConfirmedAddress) => {
     setConfirmedAddress(address);
     setShowAddressModal(false);
+    setSalvandoPedido(true);
 
     // Mark coupon as used if used
     if (melhorDesconto?.cupomId) {
@@ -128,6 +187,16 @@ const Pagamento = () => {
     const recalcTaxa = freteGratis ? 0 : address.taxaEntrega;
     const recalcTotal = subtotal - descontoValor + recalcTaxa;
 
+    // STEP 1: Save order to database
+    const numeroPedido = await salvarPedidoDB(address, recalcTaxa, recalcTotal);
+
+    if (!numeroPedido) {
+      toast.error('Erro ao registrar pedido. Tente novamente.');
+      setSalvandoPedido(false);
+      return;
+    }
+
+    // STEP 2: Build WhatsApp message and send
     const orderDetails = {
       nome: user!.nome,
       telefone: user!.telefone || '',
@@ -155,13 +224,22 @@ const Pagamento = () => {
     }
 
     const baseMessage = generateWhatsAppMessage(orderDetails);
-    const message = descontoTexto ? baseMessage.replace('💰 Total:', `${descontoTexto}\n💰 Total:`) : baseMessage;
+    const messageWithPedido = baseMessage.replace(
+      'Olá,',
+      `Olá, Pedido #${numeroPedido} —`
+    );
+    const message = descontoTexto ? messageWithPedido.replace('💰 Total:', `${descontoTexto}\n💰 Total:`) : messageWithPedido;
 
     // Show coupon toast if generated
     if (cupomGerado) {
       toast.success(`🎉 Você ganhou o cupom ${cupomGerado} para seu próximo pedido!`, { duration: 10000 });
     }
 
+    // Clear cart after successful save
+    clearCart();
+    localStorage.removeItem('pedido_observacoes');
+    
+    setSalvandoPedido(false);
     sendToWhatsApp(message);
   };
 
@@ -254,8 +332,8 @@ const Pagamento = () => {
                     </p>
                   </div>
 
-                  <Button onClick={handleFinalizarClick} className="w-full" size="lg">
-                    ✅ Já paguei – Enviar Comprovante no WhatsApp
+                  <Button onClick={handleFinalizarClick} className="w-full" size="lg" disabled={salvandoPedido}>
+                    {salvandoPedido ? '⏳ Salvando pedido...' : '✅ Já paguei – Enviar Comprovante no WhatsApp'}
                   </Button>
                 </CardContent>
               </Card>
@@ -280,8 +358,8 @@ const Pagamento = () => {
                     </p>
                   </div>
 
-                  <Button onClick={handleFinalizarClick} className="w-full" size="lg">
-                    📲 Finalizar Pedido pelo WhatsApp
+                  <Button onClick={handleFinalizarClick} className="w-full" size="lg" disabled={salvandoPedido}>
+                    {salvandoPedido ? '⏳ Salvando pedido...' : '📲 Finalizar Pedido pelo WhatsApp'}
                   </Button>
                 </CardContent>
               </Card>
