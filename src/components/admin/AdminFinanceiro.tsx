@@ -96,7 +96,7 @@ function usePedidosPeriodo(start: Date, end: Date) {
 }
 
 function usePedidosPeriodoAnterior(start: Date, end: Date) {
-  const prev = getPreviousPeriodRange(start, end);
+  const prev = useMemo(() => getPreviousPeriodRange(start, end), [start, end]);
   return useQuery({
     queryKey: ['financeiro_pedidos_prev', prev.start.toISOString(), prev.end.toISOString()],
     queryFn: async () => {
@@ -204,7 +204,7 @@ export default function AdminFinanceiro() {
   const [filterStatus, setFilterStatus] = useState('todos');
   const PER_PAGE = 20;
 
-  const { start, end } = getDateRange(periodo, customStart, customEnd);
+  const { start, end } = useMemo(() => getDateRange(periodo, customStart, customEnd), [periodo, customStart, customEnd]);
   const { data: pedidos = [], isLoading } = usePedidosPeriodo(start, end);
   const { data: pedidosPrev = [] } = usePedidosPeriodoAnterior(start, end);
 
