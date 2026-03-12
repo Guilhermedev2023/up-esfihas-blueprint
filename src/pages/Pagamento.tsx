@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Elements } from '@stripe/react-stripe-js';
+import { loadStripe } from '@stripe/stripe-js';
 import { Header } from '@/components/Header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -7,29 +9,39 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { useCart } from '@/contexts/CartContext';
 import { useAuth } from '@/contexts/AuthContext';
-import { QrCode, Truck, Copy, CheckCircle2, MapPin, Tag, Gift } from 'lucide-react';
+import { QrCode, Truck, Copy, CheckCircle2, MapPin, Tag, Gift, CreditCard, Loader2 } from 'lucide-react';
 import { generateWhatsAppMessage, sendToWhatsApp } from '@/utils/whatsappMessage';
 import { toast } from 'sonner';
 import { AddressConfirmationModal, ConfirmedAddress } from '@/components/AddressConfirmationModal';
 import { useStoreOpen } from '@/hooks/useStoreOpen';
 import { ClosedStoreMessage } from '@/components/ClosedStoreMessage';
-import { usePromocoes, useCuponsUsuario, useContarPedidosTelefone, calcularDescontos, DescontoAplicado } from '@/hooks/usePromocoes';
+import { usePromocoes, useCuponsUsuario, useContarPedidosTelefone, calcularDescontos } from '@/hooks/usePromocoes';
 import { supabase } from '@/integrations/supabase/client';
+import StripeCheckoutForm from '@/components/StripeCheckoutForm';
 
 const pixCode = '00020126740014BR.GOV.BCB.PIX0114436060510001740234linknabio.gg/christopher-rubin-6235204000053039865802BR5921CHRISTOPHER-RUBIN-6236009SAO PAULO62070503***6304CFF6';
 
 const Pagamento = () => {
   const navigate = useNavigate();
   const { items, deliveryFee, setDeliveryFee, clearCart } = useCart();
-  const { user } = useAuth();
+  const { user, session } = useAuth();
   const subtotal = items.reduce((sum, item) => sum + item.preco * item.quantidade, 0);
-  const [metodoPagamento, setMetodoPagamento] = useState<'pix' | 'entrega' | ''>('');
+  const [metodoPagamento, setMetodoPagamento] = useState<'pix' | 'entrega' | 'online' | ''>('');
   const [pixCopiado, setPixCopiado] = useState(false);
   const [showAddressModal, setShowAddressModal] = useState(false);
   const [confirmedAddress, setConfirmedAddress] = useState<ConfirmedAddress | null>(null);
   const { data: isOpen = true } = useStoreOpen();
   const [cupomGerado, setCupomGerado] = useState<string | null>(null);
   const [salvandoPedido, setSalvandoPedido] = useState(false);
+
+  // Stripe state
+  const [stripePromise] = useState(() => {
+    const key = (import.meta as any).env?.VITE_STRIPE_PUBLISHABLE_KEY;
+    return key ? loadStripe(key) : null;
+  });
+  const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const [pedidoIdStripe, setPedidoIdStripe] = useState<string | null>(null);
+  const [creatingIntent, setCreatingIntent] = useState(false);
 
   // Promoções
   const { promocoes } = usePromocoes();
@@ -44,7 +56,6 @@ const Pagamento = () => {
   const taxaEntregaFinal = freteGratis ? 0 : currentDeliveryFee;
   const totalFinal = subtotal - descontoValor + taxaEntregaFinal;
 
-  // Observações
   const [observacoes, setObservacoes] = useState('');
   useEffect(() => {
     const saved = localStorage.getItem('pedido_observacoes');
@@ -82,165 +93,134 @@ const Pagamento = () => {
         body: JSON.stringify({ telefone }),
       });
       const data = await res.json();
-      if (data.cupom) {
-        setCupomGerado(data.cupom.codigo);
-      }
-    } catch {
-      // Silent fail - coupon is a bonus
-    }
+      if (data.cupom) setCupomGerado(data.cupom.codigo);
+    } catch { /* Silent */ }
   };
 
-  // Mark coupon as used if applicable
   const marcarCupomUsado = async (cupomId: string) => {
     await (supabase as any).from('cupons_desconto').update({ usado: true }).eq('id', cupomId);
   };
 
-  // Generate next order number
   const gerarNumeroPedido = async (): Promise<number> => {
     const { data, error } = await supabase
       .from('pedidos')
       .select('numero')
       .order('numero', { ascending: false })
       .limit(1);
-    
     if (error || !data || data.length === 0) return 1;
     return (data[0].numero || 0) + 1;
   };
 
-  // Save order to database
-  const salvarPedidoDB = async (address: ConfirmedAddress, recalcTaxa: number, recalcTotal: number): Promise<number | null> => {
+  const salvarPedidoDB = async (address: ConfirmedAddress, recalcTaxa: number, recalcTotal: number, status = 'aguardando_confirmacao'): Promise<{ numero: number; id: string } | null> => {
     try {
       const numeroPedido = await gerarNumeroPedido();
-      
       const pedidoData = {
         numero: numeroPedido,
         user_id: user?.id || null,
         telefone: user?.telefone || '',
         items: items.map(item => ({
-          id: item.id,
-          nome: item.nome,
-          preco: item.preco,
-          quantidade: item.quantidade,
-          categoria: item.categoria,
+          id: item.id, nome: item.nome, preco: item.preco, quantidade: item.quantidade, categoria: item.categoria,
         })),
         subtotal,
         taxa_entrega: recalcTaxa,
         total: recalcTotal,
         endereco: {
-          rua: address.rua,
-          numero: address.numero,
-          complemento: address.complemento || '',
-          bairro: address.bairro,
+          rua: address.rua, numero: address.numero, complemento: address.complemento || '', bairro: address.bairro,
         },
         metodo_pagamento: metodoPagamento,
-        status: 'aguardando_confirmacao',
+        status,
       };
 
-      const { error } = await supabase
-        .from('pedidos')
-        .insert(pedidoData);
+      const { data, error } = await supabase.from('pedidos').insert(pedidoData).select('id').single();
+      if (error) { console.error('Erro ao salvar pedido:', error); return null; }
+      return { numero: numeroPedido, id: data.id };
+    } catch (err) { console.error('Erro ao salvar pedido:', err); return null; }
+  };
 
-      if (error) {
-        console.error('Erro ao salvar pedido:', error);
-        return null;
-      }
+  // Stripe: create PaymentIntent after address confirmation
+  const createPaymentIntent = async (address: ConfirmedAddress) => {
+    setCreatingIntent(true);
+    
+    if (melhorDesconto?.cupomId) await marcarCupomUsado(melhorDesconto.cupomId);
+    if (numPedidos === 0) await gerarCupomSegundoPedido();
 
-      return numeroPedido;
-    } catch (err) {
-      console.error('Erro ao salvar pedido:', err);
-      return null;
+    const recalcTaxa = freteGratis ? 0 : address.taxaEntrega;
+    const recalcTotal = subtotal - descontoValor + recalcTaxa;
+
+    const result = await salvarPedidoDB(address, recalcTaxa, recalcTotal, 'aguardando_pagamento');
+    if (!result) { toast.error('Erro ao criar pedido'); setCreatingIntent(false); return; }
+    
+    setPedidoIdStripe(result.id);
+
+    try {
+      const { data, error } = await supabase.functions.invoke('create-payment-intent', {
+        body: { pedido_id: result.id, amount: Math.round(recalcTotal * 100) },
+      });
+      if (error) throw error;
+      setClientSecret(data.clientSecret);
+    } catch (err: any) {
+      toast.error('Erro ao iniciar pagamento: ' + (err.message || 'tente novamente'));
     }
+    setCreatingIntent(false);
   };
 
   const handleFinalizarClick = () => {
-    if (!isOpen) {
-      toast.error('😔 O delivery está fechado no momento.');
-      return;
-    }
-    if (!metodoPagamento) {
-      toast.error('Selecione uma forma de pagamento');
-      return;
-    }
-    if (!user) {
-      toast.error('Faça login para continuar');
-      navigate('/login');
-      return;
-    }
+    if (!isOpen) { toast.error('😔 O delivery está fechado no momento.'); return; }
+    if (!metodoPagamento) { toast.error('Selecione uma forma de pagamento'); return; }
+    if (!user) { toast.error('Faça login para continuar'); navigate('/login'); return; }
     setShowAddressModal(true);
   };
 
   const handleAddressConfirm = async (address: ConfirmedAddress) => {
     setConfirmedAddress(address);
     setShowAddressModal(false);
+
+    if (metodoPagamento === 'online') {
+      await createPaymentIntent(address);
+      return;
+    }
+
+    // WhatsApp flow (pix/entrega)
     setSalvandoPedido(true);
-
-    // Mark coupon as used if used
-    if (melhorDesconto?.cupomId) {
-      await marcarCupomUsado(melhorDesconto.cupomId);
-    }
-
-    // Generate coupon for next order if this is first order
-    if (numPedidos === 0) {
-      await gerarCupomSegundoPedido();
-    }
+    if (melhorDesconto?.cupomId) await marcarCupomUsado(melhorDesconto.cupomId);
+    if (numPedidos === 0) await gerarCupomSegundoPedido();
 
     const recalcTaxa = freteGratis ? 0 : address.taxaEntrega;
     const recalcTotal = subtotal - descontoValor + recalcTaxa;
 
-    // STEP 1: Save order to database
-    const numeroPedido = await salvarPedidoDB(address, recalcTaxa, recalcTotal);
+    const result = await salvarPedidoDB(address, recalcTaxa, recalcTotal);
+    if (!result) { toast.error('Erro ao registrar pedido. Tente novamente.'); setSalvandoPedido(false); return; }
 
-    if (!numeroPedido) {
-      toast.error('Erro ao registrar pedido. Tente novamente.');
-      setSalvandoPedido(false);
-      return;
-    }
-
-    // STEP 2: Build WhatsApp message and send
     const orderDetails = {
-      nome: user!.nome,
-      telefone: user!.telefone || '',
-      endereco: {
-        rua: address.rua,
-        numero: address.numero,
-        complemento: address.complemento,
-        bairro: address.bairro
-      },
-      items,
-      subtotal,
-      taxaEntrega: recalcTaxa,
-      total: recalcTotal,
+      nome: user!.nome, telefone: user!.telefone || '',
+      endereco: { rua: address.rua, numero: address.numero, complemento: address.complemento, bairro: address.bairro },
+      items, subtotal, taxaEntrega: recalcTaxa, total: recalcTotal,
       metodoPagamento: metodoPagamento as 'pix' | 'entrega',
       observacoes: observacoes || undefined
     };
 
-    // Add discount info to WhatsApp message
     let descontoTexto = '';
-    if (melhorDesconto) {
-      descontoTexto = `\n🏷️ ${melhorDesconto.label}: -R$ ${descontoValor.toFixed(2)}`;
-    }
-    if (freteGratis) {
-      descontoTexto += '\n🚚 Frete grátis aplicado!';
-    }
+    if (melhorDesconto) descontoTexto = `\n🏷️ ${melhorDesconto.label}: -R$ ${descontoValor.toFixed(2)}`;
+    if (freteGratis) descontoTexto += '\n🚚 Frete grátis aplicado!';
 
     const baseMessage = generateWhatsAppMessage(orderDetails);
-    const messageWithPedido = baseMessage.replace(
-      'Olá,',
-      `Olá, Pedido #${numeroPedido} —`
-    );
+    const messageWithPedido = baseMessage.replace('Olá,', `Olá, Pedido #${result.numero} —`);
     const message = descontoTexto ? messageWithPedido.replace('💰 Total:', `${descontoTexto}\n💰 Total:`) : messageWithPedido;
 
-    // Show coupon toast if generated
-    if (cupomGerado) {
-      toast.success(`🎉 Você ganhou o cupom ${cupomGerado} para seu próximo pedido!`, { duration: 10000 });
-    }
+    if (cupomGerado) toast.success(`🎉 Você ganhou o cupom ${cupomGerado} para seu próximo pedido!`, { duration: 10000 });
 
-    // Clear cart after successful save
     clearCart();
     localStorage.removeItem('pedido_observacoes');
-    
     setSalvandoPedido(false);
     sendToWhatsApp(message);
+  };
+
+  const handleStripeSuccess = () => {
+    if (cupomGerado) toast.success(`🎉 Você ganhou o cupom ${cupomGerado} para seu próximo pedido!`, { duration: 10000 });
+    toast.success('Pagamento realizado com sucesso!');
+    clearCart();
+    localStorage.removeItem('pedido_observacoes');
+    navigate('/meus-pedidos');
   };
 
   return (
@@ -249,19 +229,31 @@ const Pagamento = () => {
 
       <div className="container mx-auto max-w-5xl px-4 py-8">
         {!isOpen && (
-          <div className="mb-6">
-            <ClosedStoreMessage />
-          </div>
+          <div className="mb-6"><ClosedStoreMessage /></div>
         )}
         <div className="grid gap-8 lg:grid-cols-3">
-          {/* Área de seleção de pagamento */}
           <div className="lg:col-span-2 space-y-6">
             <Card className="border-2">
               <CardHeader>
                 <CardTitle className="text-2xl">Forma de Pagamento</CardTitle>
               </CardHeader>
               <CardContent>
-                <RadioGroup value={metodoPagamento} onValueChange={(value) => setMetodoPagamento(value as 'pix' | 'entrega')}>
+                <RadioGroup value={metodoPagamento} onValueChange={(value) => { setMetodoPagamento(value as any); setClientSecret(null); }}>
+                  {/* Online */}
+                  <Card className="mb-4 cursor-pointer transition-all hover:border-primary hover:shadow-md">
+                    <CardContent className="flex items-center gap-4 p-4">
+                      <RadioGroupItem value="online" id="online" />
+                      <Label htmlFor="online" className="flex flex-1 cursor-pointer items-center gap-3">
+                        <CreditCard className="h-6 w-6 text-primary" />
+                        <div>
+                          <p className="font-semibold">Pagar Online</p>
+                          <p className="text-sm text-muted-foreground">Cartão, Apple Pay, Google Pay</p>
+                        </div>
+                      </Label>
+                    </CardContent>
+                  </Card>
+
+                  {/* PIX */}
                   <Card className="mb-4 cursor-pointer transition-all hover:border-primary hover:shadow-md">
                     <CardContent className="flex items-center gap-4 p-4">
                       <RadioGroupItem value="pix" id="pix" />
@@ -269,12 +261,13 @@ const Pagamento = () => {
                         <QrCode className="h-6 w-6 text-primary" />
                         <div>
                           <p className="font-semibold">PIX</p>
-                          <p className="text-sm text-muted-foreground">Pagamento instantâneo</p>
+                          <p className="text-sm text-muted-foreground">Pagamento instantâneo via WhatsApp</p>
                         </div>
                       </Label>
                     </CardContent>
                   </Card>
 
+                  {/* Entrega */}
                   <Card className="cursor-pointer transition-all hover:border-primary hover:shadow-md">
                     <CardContent className="flex items-center gap-4 p-4">
                       <RadioGroupItem value="entrega" id="entrega" />
@@ -291,7 +284,48 @@ const Pagamento = () => {
               </CardContent>
             </Card>
 
-            {/* Área de PIX */}
+            {/* Online Payment - Stripe */}
+            {metodoPagamento === 'online' && (
+              <Card className="border-2 border-primary/20 bg-gradient-to-br from-background to-primary/5">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-xl">
+                    <CreditCard className="h-6 w-6 text-primary" />
+                    Pagamento Online
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  {!clientSecret && !creatingIntent && (
+                    <div className="space-y-4">
+                      <p className="text-sm text-muted-foreground">
+                        Pague com cartão de crédito, débito, Apple Pay ou Google Pay. Seu pagamento é processado de forma segura.
+                      </p>
+                      <Button onClick={handleFinalizarClick} className="w-full" size="lg">
+                        💳 Confirmar endereço e pagar
+                      </Button>
+                    </div>
+                  )}
+
+                  {creatingIntent && (
+                    <div className="flex items-center justify-center py-8">
+                      <Loader2 className="h-6 w-6 animate-spin mr-2" />
+                      <span>Preparando pagamento...</span>
+                    </div>
+                  )}
+
+                  {clientSecret && stripePromise && (
+                    <Elements stripe={stripePromise} options={{ clientSecret, appearance: { theme: 'stripe', variables: { colorPrimary: '#ea580c' } } }}>
+                      <StripeCheckoutForm
+                        total={totalFinal}
+                        onSuccess={handleStripeSuccess}
+                        onError={(err) => toast.error(err)}
+                      />
+                    </Elements>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+
+            {/* PIX */}
             {metodoPagamento === 'pix' && (
               <Card className="border-2 border-primary/20 bg-gradient-to-br from-background to-primary/5">
                 <CardHeader>
@@ -309,7 +343,6 @@ const Pagamento = () => {
                       Escaneie o QR Code acima com seu app de banco ou use o código PIX abaixo
                     </p>
                   </div>
-
                   <div className="space-y-2">
                     <Label className="text-sm font-semibold">Código Copia e Cola PIX:</Label>
                     <div className="flex gap-2">
@@ -319,7 +352,6 @@ const Pagamento = () => {
                       </Button>
                     </div>
                   </div>
-
                   <div className="rounded-lg bg-primary/10 p-4 space-y-3">
                     <p className="font-semibold text-sm">📱 Como pagar:</p>
                     <ol className="text-sm space-y-1 ml-4 list-decimal">
@@ -331,7 +363,6 @@ const Pagamento = () => {
                       ⚠️ Seu pedido só é confirmado após enviar o comprovante pelo WhatsApp.
                     </p>
                   </div>
-
                   <Button onClick={handleFinalizarClick} className="w-full" size="lg" disabled={salvandoPedido}>
                     {salvandoPedido ? '⏳ Salvando pedido...' : '✅ Já paguei – Enviar Comprovante no WhatsApp'}
                   </Button>
@@ -339,7 +370,7 @@ const Pagamento = () => {
               </Card>
             )}
 
-            {/* Área de Pagamento na Entrega */}
+            {/* Entrega */}
             {metodoPagamento === 'entrega' && (
               <Card className="border-2 border-primary/20 bg-gradient-to-br from-background to-accent/5">
                 <CardHeader>
@@ -353,11 +384,7 @@ const Pagamento = () => {
                     <p className="text-base">
                       💳 O motoboy levará a maquininha. Você pode pagar em <strong>cartão de crédito</strong>, <strong>débito</strong> ou <strong>dinheiro</strong>.
                     </p>
-                    <p className="text-sm text-muted-foreground">
-                      Seu pedido será confirmado assim que você finalizar pelo WhatsApp.
-                    </p>
                   </div>
-
                   <Button onClick={handleFinalizarClick} className="w-full" size="lg" disabled={salvandoPedido}>
                     {salvandoPedido ? '⏳ Salvando pedido...' : '📲 Finalizar Pedido pelo WhatsApp'}
                   </Button>
@@ -366,14 +393,13 @@ const Pagamento = () => {
             )}
           </div>
 
-          {/* Resumo do Pedido */}
+          {/* Order Summary */}
           <div className="lg:col-span-1">
             <Card className="sticky top-20 border-2">
               <CardHeader>
                 <CardTitle>Resumo do Pedido</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                {/* Confirmed Address Display */}
                 {confirmedAddress && (
                   <div className="rounded-lg bg-primary/5 p-3 space-y-1">
                     <div className="flex items-center gap-2 text-sm font-semibold text-primary">
@@ -393,37 +419,27 @@ const Pagamento = () => {
                     <span>Subtotal</span>
                     <span>R$ {subtotal.toFixed(2)}</span>
                   </div>
-
-                  {/* Desconto aplicado */}
                   {melhorDesconto && (
                     <div className="flex justify-between text-sm text-green-600 font-medium">
-                      <span className="flex items-center gap-1">
-                        <Tag className="h-3 w-3" />
-                        {melhorDesconto.label}
-                      </span>
+                      <span className="flex items-center gap-1"><Tag className="h-3 w-3" />{melhorDesconto.label}</span>
                       <span>-R$ {descontoValor.toFixed(2)}</span>
                     </div>
                   )}
-
                   <div className="flex justify-between text-sm">
                     <span>Taxa de entrega</span>
                     {freteGratis ? (
-                      <span className="text-green-600 font-medium flex items-center gap-1">
-                        <Truck className="h-3 w-3" /> Grátis!
-                      </span>
+                      <span className="text-green-600 font-medium flex items-center gap-1"><Truck className="h-3 w-3" /> Grátis!</span>
                     ) : confirmedAddress ? (
                       <span>R$ {currentDeliveryFee.toFixed(2)}</span>
                     ) : (
                       <span className="text-muted-foreground">A confirmar</span>
                     )}
                   </div>
-
                   {freteGratis && (
                     <div className="rounded-lg bg-green-50 dark:bg-green-950/30 p-2 text-center">
                       <p className="text-xs text-green-600 font-medium">🚚 Frete grátis aplicado neste pedido!</p>
                     </div>
                   )}
-
                   <div className="border-t pt-2">
                     <div className="flex justify-between text-xl font-bold">
                       <span>Total</span>
@@ -432,7 +448,6 @@ const Pagamento = () => {
                   </div>
                 </div>
 
-                {/* Cupom disponível */}
                 {cuponsDisponiveis.length > 0 && !melhorDesconto?.cupomId && (
                   <div className="rounded-lg bg-primary/5 p-3 space-y-1">
                     <div className="flex items-center gap-2 text-sm font-semibold text-primary">

@@ -4,21 +4,19 @@ import { useAdmin } from '@/hooks/useAdmin';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import { LogOut, Package, MapPin, Settings, Clock, Image, Gift, DollarSign } from 'lucide-react';
+import { LogOut, Package, MapPin, Settings, Clock, Image, Gift, DollarSign, ClipboardList } from 'lucide-react';
 import AdminProdutos from '@/components/admin/AdminProdutos';
 import AdminEntregas from '@/components/admin/AdminEntregas';
 import AdminHorario from '@/components/admin/AdminHorario';
 import AdminBanner from '@/components/admin/AdminBanner';
 import AdminPromocoes from '@/components/admin/AdminPromocoes';
 import AdminFinanceiro from '@/components/admin/AdminFinanceiro';
+import AdminPedidos from '@/components/admin/AdminPedidos';
 
 const Admin = () => {
   const { user, signOut } = useAdmin();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState('produtos');
-
-  // Note: Auth and admin checks are handled by AdminRoute wrapper
-  // This component only renders when user is authenticated and is admin
+  const [activeTab, setActiveTab] = useState('pedidos');
 
   const handleSignOut = async () => {
     const { error } = await signOut();
@@ -32,7 +30,6 @@ const Admin = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
       <header className="bg-card border-b sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -51,10 +48,13 @@ const Admin = () => {
         </div>
       </header>
 
-      {/* Main Content */}
       <main className="container mx-auto px-4 py-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full max-w-4xl grid-cols-6">
+          <TabsList className="grid w-full max-w-5xl grid-cols-7">
+            <TabsTrigger value="pedidos" className="flex items-center gap-2">
+              <ClipboardList className="h-4 w-4" />
+              <span className="hidden sm:inline">Pedidos</span>
+            </TabsTrigger>
             <TabsTrigger value="produtos" className="flex items-center gap-2">
               <Package className="h-4 w-4" />
               <span className="hidden sm:inline">Cardápio</span>
@@ -80,6 +80,10 @@ const Admin = () => {
               <span className="hidden sm:inline">Financeiro</span>
             </TabsTrigger>
           </TabsList>
+
+          <TabsContent value="pedidos">
+            <AdminPedidos />
+          </TabsContent>
 
           <TabsContent value="produtos">
             <AdminProdutos />
