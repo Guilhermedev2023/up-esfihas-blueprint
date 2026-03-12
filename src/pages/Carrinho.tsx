@@ -195,6 +195,8 @@ const Carrinho = () => {
                   size="lg"
                   disabled={!isOpen || total < VALOR_MINIMO_PEDIDO}
                 >
+                  {isOpen ? 'Continuar para Checkout' : '🔴 Delivery Fechado'}
+                </Button>
                   {isOpen ? 'Continuar para Pagamento' : '🔴 Delivery Fechado'}
                 </Button>
               </CardContent>
