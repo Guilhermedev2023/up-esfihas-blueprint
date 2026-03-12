@@ -3,7 +3,7 @@ import { Header } from '@/components/Header';
 import { Button } from '@/components/ui/button';
 import { useCart } from '@/contexts/CartContext';
 import { useAuth } from '@/contexts/AuthContext';
-import { getDeliveryFee } from '@/utils/deliveryFees';
+
 import { useNavigate } from 'react-router-dom';
 import { Plus, Minus, Trash2, ShoppingBag, AlertCircle } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
