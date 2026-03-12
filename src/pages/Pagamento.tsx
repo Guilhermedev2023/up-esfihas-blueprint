@@ -164,7 +164,7 @@ const Pagamento = () => {
       const numeroPedido = await gerarNumeroPedido();
       const pedidoData = {
         numero: numeroPedido,
-        user_id: user?.id || null,
+        user_id: user?.user_id || null,
         telefone: user?.telefone || '',
         items: items.map(item => ({ id: item.id, nome: item.nome, preco: item.preco, quantidade: item.quantidade, categoria: item.categoria })),
         subtotal,
