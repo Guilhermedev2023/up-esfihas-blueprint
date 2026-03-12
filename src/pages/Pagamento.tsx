@@ -35,13 +35,23 @@ const Pagamento = () => {
   const [salvandoPedido, setSalvandoPedido] = useState(false);
 
   // Stripe state
-  const [stripePromise] = useState(() => {
-    const key = (import.meta as any).env?.VITE_STRIPE_PUBLISHABLE_KEY;
-    return key ? loadStripe(key) : null;
-  });
+  const [stripePromise, setStripePromise] = useState<ReturnType<typeof loadStripe> | null>(null);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [pedidoIdStripe, setPedidoIdStripe] = useState<string | null>(null);
   const [creatingIntent, setCreatingIntent] = useState(false);
+
+  // Load Stripe publishable key
+  useEffect(() => {
+    const loadKey = async () => {
+      try {
+        const { data } = await supabase.functions.invoke('get-stripe-key');
+        if (data?.publishableKey) {
+          setStripePromise(loadStripe(data.publishableKey));
+        }
+      } catch { /* Stripe unavailable */ }
+    };
+    loadKey();
+  }, []);
 
   // Promoções
   const { promocoes } = usePromocoes();
