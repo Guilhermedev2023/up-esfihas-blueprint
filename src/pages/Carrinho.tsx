@@ -3,7 +3,7 @@ import { Header } from '@/components/Header';
 import { Button } from '@/components/ui/button';
 import { useCart } from '@/contexts/CartContext';
 import { useAuth } from '@/contexts/AuthContext';
-import { getDeliveryFee } from '@/utils/deliveryFees';
+
 import { useNavigate } from 'react-router-dom';
 import { Plus, Minus, Trash2, ShoppingBag, AlertCircle } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
@@ -16,20 +16,11 @@ import { ClosedStoreMessage } from '@/components/ClosedStoreMessage';
 const VALOR_MINIMO_PEDIDO = 15;
 
 const Carrinho = () => {
-  const { items, updateQuantity, removeFromCart, clearCart, total, deliveryFee, setDeliveryFee } = useCart();
+  const { items, updateQuantity, removeFromCart, clearCart, total } = useCart();
   const { user } = useAuth();
   const navigate = useNavigate();
   const { data: isOpen = true } = useStoreOpen();
   const [observacoes, setObservacoes] = useState('');
-
-  useEffect(() => {
-    if (user && 'bairro' in user) {
-      const fee = getDeliveryFee((user as any).bairro);
-      if (fee !== null) {
-        setDeliveryFee(fee);
-      }
-    }
-  }, [user, setDeliveryFee]);
 
   // Save observacoes to localStorage for use in payment page
   useEffect(() => {
@@ -166,26 +157,19 @@ const Carrinho = () => {
               <CardContent className="p-6">
                 <h2 className="mb-4 text-xl font-bold text-foreground">Resumo do Pedido</h2>
 
-                <div className="space-y-2">
+                  <div className="space-y-2">
                   <div className="flex justify-between text-foreground">
                     <span>Subtotal</span>
                     <span className="font-medium">R$ {total.toFixed(2)}</span>
                   </div>
-                  {deliveryFee > 0 ? (
-                    <div className="flex justify-between text-foreground">
-                      <span>Taxa de entrega</span>
-                      <span className="font-medium">R$ {deliveryFee.toFixed(2)}</span>
-                    </div>
-                  ) : (
-                    <div className="flex justify-between text-sm text-muted-foreground">
-                      <span>Taxa de entrega</span>
-                      <span>A calcular</span>
-                    </div>
-                  )}
+                  <div className="flex justify-between text-sm text-muted-foreground">
+                    <span>Taxa de entrega</span>
+                    <span>Calculada no checkout</span>
+                  </div>
                   <div className="my-4 border-t pt-4">
                     <div className="flex justify-between text-xl font-bold text-foreground">
-                      <span>Total</span>
-                      <span>R$ {(total + deliveryFee).toFixed(2)}</span>
+                      <span>Subtotal</span>
+                      <span>R$ {total.toFixed(2)}</span>
                     </div>
                   </div>
                 </div>
@@ -211,7 +195,7 @@ const Carrinho = () => {
                   size="lg"
                   disabled={!isOpen || total < VALOR_MINIMO_PEDIDO}
                 >
-                  {isOpen ? 'Continuar para Pagamento' : '🔴 Delivery Fechado'}
+                  {isOpen ? 'Continuar para Checkout' : '🔴 Delivery Fechado'}
                 </Button>
               </CardContent>
             </Card>
