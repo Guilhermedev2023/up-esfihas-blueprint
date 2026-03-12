@@ -16,20 +16,11 @@ import { ClosedStoreMessage } from '@/components/ClosedStoreMessage';
 const VALOR_MINIMO_PEDIDO = 15;
 
 const Carrinho = () => {
-  const { items, updateQuantity, removeFromCart, clearCart, total, deliveryFee, setDeliveryFee } = useCart();
+  const { items, updateQuantity, removeFromCart, clearCart, total } = useCart();
   const { user } = useAuth();
   const navigate = useNavigate();
   const { data: isOpen = true } = useStoreOpen();
   const [observacoes, setObservacoes] = useState('');
-
-  useEffect(() => {
-    if (user && 'bairro' in user) {
-      const fee = getDeliveryFee((user as any).bairro);
-      if (fee !== null) {
-        setDeliveryFee(fee);
-      }
-    }
-  }, [user, setDeliveryFee]);
 
   // Save observacoes to localStorage for use in payment page
   useEffect(() => {
