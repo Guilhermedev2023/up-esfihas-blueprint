@@ -197,8 +197,6 @@ const Carrinho = () => {
                 >
                   {isOpen ? 'Continuar para Checkout' : '🔴 Delivery Fechado'}
                 </Button>
-                  {isOpen ? 'Continuar para Pagamento' : '🔴 Delivery Fechado'}
-                </Button>
               </CardContent>
             </Card>
           </div>
