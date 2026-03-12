@@ -1,0 +1,321 @@
+import { useState, useEffect, useRef, useMemo } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { toast } from 'sonner';
+import { ChevronRight, Clock, MapPin, Phone, CreditCard, Eye, Volume2, VolumeX } from 'lucide-react';
+
+interface Pedido {
+  id: string;
+  numero: number;
+  telefone: string;
+  items: any[];
+  subtotal: number;
+  taxa_entrega: number;
+  total: number;
+  endereco: any;
+  metodo_pagamento: string;
+  status: string;
+  created_at: string;
+  user_id: string | null;
+}
+
+const STATUS_COLUMNS = [
+  { key: 'pago', label: 'Aceitar Pedido', color: 'bg-yellow-500', next: 'em_preparo' },
+  { key: 'em_preparo', label: 'Em Preparo', color: 'bg-blue-500', next: 'saiu_entrega' },
+  { key: 'saiu_entrega', label: 'Saiu p/ Entrega', color: 'bg-purple-500', next: 'concluido' },
+  { key: 'concluido', label: 'Finalizado', color: 'bg-green-500', next: null },
+];
+
+// Also show WhatsApp orders
+const WHATSAPP_STATUS = { key: 'aguardando_confirmacao', label: 'WhatsApp (Pendente)', color: 'bg-orange-500', next: 'em_preparo' };
+
+const AdminPedidos = () => {
+  const queryClient = useQueryClient();
+  const [selectedPedido, setSelectedPedido] = useState<Pedido | null>(null);
+  const [alertActive, setAlertActive] = useState(false);
+  const [soundEnabled, setSoundEnabled] = useState(true);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const previousCountRef = useRef<number>(0);
+
+  const { data: pedidos = [] } = useQuery({
+    queryKey: ['admin-pedidos'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('pedidos')
+        .select('*')
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return data as Pedido[];
+    },
+    refetchInterval: 5000,
+  });
+
+  // Count new orders (pago status)
+  const newOrderCount = useMemo(() => 
+    pedidos.filter(p => p.status === 'pago').length,
+    [pedidos]
+  );
+
+  // Alert sound for new orders
+  useEffect(() => {
+    if (newOrderCount > previousCountRef.current && soundEnabled) {
+      setAlertActive(true);
+      playAlertSound();
+    }
+    previousCountRef.current = newOrderCount;
+  }, [newOrderCount, soundEnabled]);
+
+  const playAlertSound = () => {
+    // Create simple alert beep using Web Audio API
+    try {
+      const ctx = new AudioContext();
+      const playBeep = () => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.frequency.value = 800;
+        gain.gain.value = 0.3;
+        osc.start();
+        osc.stop(ctx.currentTime + 0.3);
+      };
+      playBeep();
+      const interval = setInterval(playBeep, 2000);
+      audioRef.current = { stop: () => clearInterval(interval) } as any;
+    } catch {
+      // Silent fail
+    }
+  };
+
+  const stopAlert = () => {
+    setAlertActive(false);
+    if (audioRef.current && (audioRef.current as any).stop) {
+      (audioRef.current as any).stop();
+    }
+  };
+
+  const updateStatus = useMutation({
+    mutationFn: async ({ id, newStatus }: { id: string; newStatus: string }) => {
+      const { error } = await supabase
+        .from('pedidos')
+        .update({ status: newStatus })
+        .eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-pedidos'] });
+      toast.success('Status atualizado!');
+    },
+    onError: () => toast.error('Erro ao atualizar status'),
+  });
+
+  const handleAdvanceStatus = (pedido: Pedido, nextStatus: string) => {
+    if (pedido.status === 'pago') stopAlert();
+    updateStatus.mutate({ id: pedido.id, newStatus: nextStatus });
+  };
+
+  const allColumns = [WHATSAPP_STATUS, ...STATUS_COLUMNS];
+
+  const getButtonLabel = (status: string) => {
+    switch (status) {
+      case 'aguardando_confirmacao': return 'Confirmar Pedido';
+      case 'pago': return 'Aceitar Pedido';
+      case 'em_preparo': return 'Saiu p/ Entrega';
+      case 'saiu_entrega': return 'Finalizar';
+      default: return '';
+    }
+  };
+
+  const formatTime = (date: string) => {
+    return new Date(date).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+  };
+
+  const formatDate = (date: string) => {
+    return new Date(date).toLocaleDateString('pt-BR');
+  };
+
+  return (
+    <div className="space-y-4">
+      {/* Alert bar */}
+      {alertActive && (
+        <div className="bg-yellow-500/20 border border-yellow-500 rounded-lg p-4 flex items-center justify-between animate-pulse">
+          <div className="flex items-center gap-2">
+            <Volume2 className="h-5 w-5 text-yellow-600" />
+            <span className="font-semibold text-yellow-700">🔔 Novo pedido recebido!</span>
+          </div>
+          <Button size="sm" variant="outline" onClick={stopAlert}>
+            Parar alerta
+          </Button>
+        </div>
+      )}
+
+      {/* Sound toggle */}
+      <div className="flex justify-end">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setSoundEnabled(!soundEnabled)}
+          className="text-muted-foreground"
+        >
+          {soundEnabled ? <Volume2 className="h-4 w-4 mr-1" /> : <VolumeX className="h-4 w-4 mr-1" />}
+          {soundEnabled ? 'Som ativado' : 'Som desativado'}
+        </Button>
+      </div>
+
+      {/* Kanban Board */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+        {allColumns.map((col) => {
+          const colPedidos = pedidos.filter(p => p.status === col.key);
+          return (
+            <div key={col.key} className="space-y-3">
+              <div className="flex items-center gap-2">
+                <div className={`w-3 h-3 rounded-full ${col.color}`} />
+                <h3 className="font-semibold text-sm">{col.label}</h3>
+                <Badge variant="secondary" className="ml-auto">{colPedidos.length}</Badge>
+              </div>
+
+              <div className="space-y-2 min-h-[200px]">
+                {colPedidos.map((pedido) => (
+                  <Card key={pedido.id} className="border shadow-sm hover:shadow-md transition-shadow">
+                    <CardContent className="p-3 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-sm">#{pedido.numero}</span>
+                        <span className="text-xs text-muted-foreground flex items-center gap-1">
+                          <Clock className="h-3 w-3" />
+                          {formatTime(pedido.created_at)}
+                        </span>
+                      </div>
+
+                      <div className="text-xs text-muted-foreground flex items-center gap-1">
+                        <Phone className="h-3 w-3" />
+                        {pedido.telefone}
+                      </div>
+
+                      <div className="flex items-center justify-between">
+                        <span className="font-semibold text-primary text-sm">
+                          R$ {Number(pedido.total).toFixed(2)}
+                        </span>
+                        <Badge variant="outline" className="text-[10px]">
+                          {pedido.metodo_pagamento}
+                        </Badge>
+                      </div>
+
+                      <div className="flex gap-1">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="flex-1 h-7 text-xs"
+                          onClick={() => setSelectedPedido(pedido)}
+                        >
+                          <Eye className="h-3 w-3 mr-1" /> Ver
+                        </Button>
+                        {col.next && (
+                          <Button
+                            size="sm"
+                            className="flex-1 h-7 text-xs"
+                            onClick={() => handleAdvanceStatus(pedido, col.next!)}
+                          >
+                            {getButtonLabel(pedido.status)}
+                            <ChevronRight className="h-3 w-3 ml-1" />
+                          </Button>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+                {colPedidos.length === 0 && (
+                  <div className="text-center text-xs text-muted-foreground py-8 border border-dashed rounded-lg">
+                    Nenhum pedido
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Order detail modal */}
+      <Dialog open={!!selectedPedido} onOpenChange={() => setSelectedPedido(null)}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Pedido #{selectedPedido?.numero}</DialogTitle>
+          </DialogHeader>
+          {selectedPedido && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <p className="text-muted-foreground">Data</p>
+                  <p className="font-medium">{formatDate(selectedPedido.created_at)} {formatTime(selectedPedido.created_at)}</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground">Telefone</p>
+                  <p className="font-medium">{selectedPedido.telefone}</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground">Pagamento</p>
+                  <p className="font-medium flex items-center gap-1">
+                    <CreditCard className="h-3 w-3" />
+                    {selectedPedido.metodo_pagamento}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground">Status</p>
+                  <Badge>{selectedPedido.status}</Badge>
+                </div>
+              </div>
+
+              {/* Address */}
+              {selectedPedido.endereco && (
+                <div className="rounded-lg bg-muted p-3 text-sm space-y-1">
+                  <p className="font-semibold flex items-center gap-1">
+                    <MapPin className="h-3 w-3" /> Endereço
+                  </p>
+                  <p>
+                    {(selectedPedido.endereco as any).rua}, {(selectedPedido.endereco as any).numero}
+                    {(selectedPedido.endereco as any).complemento && ` - ${(selectedPedido.endereco as any).complemento}`}
+                  </p>
+                  <p>{(selectedPedido.endereco as any).bairro}</p>
+                </div>
+              )}
+
+              {/* Items */}
+              <div className="space-y-2">
+                <p className="font-semibold text-sm">Itens do pedido</p>
+                <div className="space-y-1">
+                  {Array.isArray(selectedPedido.items) && selectedPedido.items.map((item: any, i: number) => (
+                    <div key={i} className="flex justify-between text-sm py-1 border-b last:border-0">
+                      <span>{item.quantidade}x {item.nome}</span>
+                      <span>R$ {(item.preco * item.quantidade).toFixed(2)}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Totals */}
+              <div className="space-y-1 text-sm pt-2 border-t">
+                <div className="flex justify-between">
+                  <span>Subtotal</span>
+                  <span>R$ {Number(selectedPedido.subtotal).toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Taxa de entrega</span>
+                  <span>R$ {Number(selectedPedido.taxa_entrega).toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between font-bold text-base pt-1">
+                  <span>Total</span>
+                  <span className="text-primary">R$ {Number(selectedPedido.total).toFixed(2)}</span>
+                </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+};
+
+export default AdminPedidos;
