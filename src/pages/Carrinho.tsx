@@ -157,26 +157,19 @@ const Carrinho = () => {
               <CardContent className="p-6">
                 <h2 className="mb-4 text-xl font-bold text-foreground">Resumo do Pedido</h2>
 
-                <div className="space-y-2">
+                  <div className="space-y-2">
                   <div className="flex justify-between text-foreground">
                     <span>Subtotal</span>
                     <span className="font-medium">R$ {total.toFixed(2)}</span>
                   </div>
-                  {deliveryFee > 0 ? (
-                    <div className="flex justify-between text-foreground">
-                      <span>Taxa de entrega</span>
-                      <span className="font-medium">R$ {deliveryFee.toFixed(2)}</span>
-                    </div>
-                  ) : (
-                    <div className="flex justify-between text-sm text-muted-foreground">
-                      <span>Taxa de entrega</span>
-                      <span>A calcular</span>
-                    </div>
-                  )}
+                  <div className="flex justify-between text-sm text-muted-foreground">
+                    <span>Taxa de entrega</span>
+                    <span>Calculada no checkout</span>
+                  </div>
                   <div className="my-4 border-t pt-4">
                     <div className="flex justify-between text-xl font-bold text-foreground">
-                      <span>Total</span>
-                      <span>R$ {(total + deliveryFee).toFixed(2)}</span>
+                      <span>Subtotal</span>
+                      <span>R$ {total.toFixed(2)}</span>
                     </div>
                   </div>
                 </div>
