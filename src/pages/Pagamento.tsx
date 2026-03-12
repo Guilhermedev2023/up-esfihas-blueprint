@@ -159,25 +159,61 @@ const Pagamento = () => {
     return (data[0].numero || 0) + 1;
   };
 
-  const salvarPedidoDB = async (address: ConfirmedAddress, recalcTaxa: number, recalcTotal: number, status = 'aguardando_confirmacao'): Promise<{ numero: number; id: string } | null> => {
+  const salvarPedidoDB = async (
+    address: ConfirmedAddress,
+    recalcTaxa: number,
+    recalcTotal: number,
+    authUserId: string,
+    status = 'pendente'
+  ): Promise<{ numero: number; id: string } | null> => {
     try {
       const numeroPedido = await gerarNumeroPedido();
       const pedidoData = {
         numero: numeroPedido,
-        user_id: user?.user_id || null,
-        telefone: user?.telefone || '',
+        user_id: authUserId,
+        telefone: user?.telefone ?? '',
         items: items.map(item => ({ id: item.id, nome: item.nome, preco: item.preco, quantidade: item.quantidade, categoria: item.categoria })),
         subtotal,
         taxa_entrega: recalcTaxa,
         total: recalcTotal,
-        endereco: { rua: address.rua, numero: address.numero, complemento: address.complemento || '', bairro: address.bairro },
+        endereco: {
+          rua: address.rua,
+          numero: address.numero,
+          complemento: address.complemento || '',
+          bairro: address.bairro,
+          distancia_km: address.distanciaKm ?? null,
+          tempo_estimado_min: address.tempoEstimado ?? null,
+        },
         metodo_pagamento: 'pendente',
         status,
       };
+
       const { data, error } = await supabase.from('pedidos').insert(pedidoData).select('id').single();
-      if (error) { console.error('Erro ao salvar pedido:', error); return null; }
+
+      if (error) {
+        console.error('Erro ao criar pedido (detalhado):', {
+          code: error.code,
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          payload: {
+            numero: pedidoData.numero,
+            user_id: pedidoData.user_id,
+            subtotal: pedidoData.subtotal,
+            taxa_entrega: pedidoData.taxa_entrega,
+            total: pedidoData.total,
+            metodo_pagamento: pedidoData.metodo_pagamento,
+            status: pedidoData.status,
+          },
+        });
+        return null;
+      }
+
       return { numero: numeroPedido, id: data.id };
-    } catch (err) { console.error('Erro ao salvar pedido:', err); return null; }
+    } catch (err) {
+      console.error('Erro inesperado ao salvar pedido:', err);
+      return null;
+    }
   };
 
   const gerarCupomSegundoPedido = async () => {
@@ -201,29 +237,57 @@ const Pagamento = () => {
   // Called when user clicks "Usar esse endereço"
   const handleConfirmAddress = async (address: ConfirmedAddress) => {
     if (!isOpen) { toast.error('😔 O delivery está fechado no momento.'); return; }
+    if (salvandoPedido) return;
 
-    setSalvandoPedido(true);
-    setConfirmedAddress(address);
-    setDeliveryFee(address.taxaEntrega);
+    if (!address.rua?.trim() || !address.numero?.trim() || !address.bairro?.trim()) {
+      toast.error('Preencha o endereço completo antes de continuar.');
+      return;
+    }
 
-    // Process promotions
-    if (melhorDesconto?.cupomId) await marcarCupomUsado(melhorDesconto.cupomId);
-    if (numPedidos === 0) await gerarCupomSegundoPedido();
+    if (!Number.isFinite(address.distanciaKm ?? NaN)) {
+      toast.error('Não foi possível validar a distância da entrega.');
+      return;
+    }
 
     const recalcTaxa = freteGratis ? 0 : address.taxaEntrega;
     const recalcTotal = subtotal - descontoValor + recalcTaxa;
 
-    const result = await salvarPedidoDB(address, recalcTaxa, recalcTotal);
-    if (!result) {
-      toast.error('Erro ao criar pedido. Tente novamente.');
-      setSalvandoPedido(false);
+    if (![recalcTaxa, subtotal, recalcTotal].every((value) => Number.isFinite(value))) {
+      toast.error('Valores do pedido inválidos. Recalcule o frete e tente novamente.');
       return;
     }
 
-    setPedidoCriado(result);
-    setSalvandoPedido(false);
-    setStep('payment');
-    toast.success(`Pedido #${result.numero} criado! Escolha a forma de pagamento.`);
+    const { data: authData, error: authError } = await supabase.auth.getUser();
+    const authUserId = authData.user?.id;
+
+    if (authError || !authUserId) {
+      console.error('Erro ao obter usuário autenticado para criar pedido:', authError);
+      toast.error('Sessão expirada. Faça login novamente para concluir o pedido.');
+      return;
+    }
+
+    setSalvandoPedido(true);
+
+    try {
+      setConfirmedAddress(address);
+      setDeliveryFee(address.taxaEntrega);
+
+      // Process promotions
+      if (melhorDesconto?.cupomId) await marcarCupomUsado(melhorDesconto.cupomId);
+      if (numPedidos === 0) await gerarCupomSegundoPedido();
+
+      const result = await salvarPedidoDB(address, recalcTaxa, recalcTotal, authUserId, 'pendente');
+      if (!result) {
+        toast.error('Erro ao criar pedido. Tente novamente.');
+        return;
+      }
+
+      setPedidoCriado(result);
+      setStep('payment');
+      toast.success(`Pedido #${result.numero} criado! Escolha a forma de pagamento.`);
+    } finally {
+      setSalvandoPedido(false);
+    }
   };
 
   // ---- PAYMENT HANDLERS ----
@@ -270,8 +334,8 @@ const Pagamento = () => {
     if (!pedidoCriado) return;
     setCreatingIntent(true);
 
-    // Update order with payment method and status
-    await supabase.from('pedidos').update({ metodo_pagamento: 'online', status: 'aguardando_pagamento' }).eq('id', pedidoCriado.id);
+    // Update order with payment method
+    await supabase.from('pedidos').update({ metodo_pagamento: 'online' }).eq('id', pedidoCriado.id);
 
     try {
       const { data, error } = await supabase.functions.invoke('create-payment-intent', {
