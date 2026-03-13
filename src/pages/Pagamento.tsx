@@ -231,7 +231,7 @@ const Pagamento = () => {
   };
 
   const marcarCupomUsado = async (cupomId: string) => {
-    await (supabase as any).from('cupons_desconto').update({ usado: true }).eq('id', cupomId);
+    await supabase.rpc('usar_cupom', { _cupom_id: cupomId });
   };
 
   // Called when user clicks "Usar esse endereço"
