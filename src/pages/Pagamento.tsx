@@ -309,9 +309,10 @@ const Pagamento = () => {
   const handleStripeSuccess = () => {
     if (cupomGerado) toast.success(`🎉 Você ganhou o cupom ${cupomGerado} para seu próximo pedido!`, { duration: 10000 });
     toast.success('Pagamento realizado com sucesso!');
+    localStorage.setItem('pedido_enviado_sucesso', 'true');
     clearCart();
     localStorage.removeItem('pedido_observacoes');
-    navigate('/pedidos');
+    navigate('/carrinho');
   };
 
   // ---- RENDER ----
