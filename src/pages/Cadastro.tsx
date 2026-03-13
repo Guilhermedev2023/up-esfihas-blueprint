@@ -190,20 +190,20 @@ const Cadastro = () => {
                     return (
                       <>
                         <div className="flex items-center gap-1">
-                          {validacao.minimo6 ? <CheckCircle className="h-3 w-3 text-green-500" /> : <XCircle className="h-3 w-3 text-red-400" />}
-                          <span className={validacao.minimo6 ? 'text-green-600' : 'text-muted-foreground'}>Mínimo 6 caracteres</span>
+                          {validacao.minimo6 ? <CheckCircle className="h-3 w-3 text-primary" /> : <XCircle className="h-3 w-3 text-destructive" />}
+                          <span className={validacao.minimo6 ? 'text-primary' : 'text-muted-foreground'}>Mínimo 6 caracteres</span>
                         </div>
                         <div className="flex items-center gap-1">
-                          {validacao.maiuscula ? <CheckCircle className="h-3 w-3 text-green-500" /> : <XCircle className="h-3 w-3 text-red-400" />}
-                          <span className={validacao.maiuscula ? 'text-green-600' : 'text-muted-foreground'}>Pelo menos uma letra maiúscula</span>
+                          {validacao.maiuscula ? <CheckCircle className="h-3 w-3 text-primary" /> : <XCircle className="h-3 w-3 text-destructive" />}
+                          <span className={validacao.maiuscula ? 'text-primary' : 'text-muted-foreground'}>Pelo menos uma letra maiúscula</span>
                         </div>
                         <div className="flex items-center gap-1">
-                          {validacao.minuscula ? <CheckCircle className="h-3 w-3 text-green-500" /> : <XCircle className="h-3 w-3 text-red-400" />}
-                          <span className={validacao.minuscula ? 'text-green-600' : 'text-muted-foreground'}>Pelo menos uma letra minúscula</span>
+                          {validacao.minuscula ? <CheckCircle className="h-3 w-3 text-primary" /> : <XCircle className="h-3 w-3 text-destructive" />}
+                          <span className={validacao.minuscula ? 'text-primary' : 'text-muted-foreground'}>Pelo menos uma letra minúscula</span>
                         </div>
                         <div className="flex items-center gap-1">
-                          {validacao.numero ? <CheckCircle className="h-3 w-3 text-green-500" /> : <XCircle className="h-3 w-3 text-red-400" />}
-                          <span className={validacao.numero ? 'text-green-600' : 'text-muted-foreground'}>Pelo menos um número</span>
+                          {validacao.numero ? <CheckCircle className="h-3 w-3 text-primary" /> : <XCircle className="h-3 w-3 text-destructive" />}
+                          <span className={validacao.numero ? 'text-primary' : 'text-muted-foreground'}>Pelo menos um número</span>
                         </div>
                       </>
                     );
@@ -217,9 +217,9 @@ const Cadastro = () => {
               {formData.confirmarSenha && (
                 <div className="flex items-center gap-1 text-xs">
                   {formData.senha === formData.confirmarSenha ? (
-                    <><CheckCircle className="h-3 w-3 text-green-500" /> <span className="text-green-600">Senhas coincidem</span></>
+                    <><CheckCircle className="h-3 w-3 text-primary" /> <span className="text-primary">Senhas coincidem</span></>
                   ) : (
-                    <><XCircle className="h-3 w-3 text-red-400" /> <span className="text-red-500">Senhas não coincidem</span></>
+                    <><XCircle className="h-3 w-3 text-destructive" /> <span className="text-destructive">Senhas não coincidem</span></>
                   )}
                 </div>
               )}
