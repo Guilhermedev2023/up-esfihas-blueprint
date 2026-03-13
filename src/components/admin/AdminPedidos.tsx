@@ -194,8 +194,12 @@ const AdminPedidos = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {STATUS_COLUMNS.map((col) => {
-          const colPedidos = pedidos.filter(p => p.status === col.key);
-          return (
+          // Hide finalized orders when store is closed
+          const colPedidos = pedidos.filter(p => {
+            if (p.status !== col.key) return false;
+            if (col.key === 'finalizado' && !isStoreOpen) return false;
+            return true;
+          });
             <div key={col.key} className="space-y-3">
               <div className="flex items-center gap-2">
                 <div className={`w-3 h-3 rounded-full ${col.color}`} />
