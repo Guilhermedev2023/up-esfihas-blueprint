@@ -603,11 +603,10 @@ const Pagamento = () => {
                       {!clientSecret && !creatingIntent && (
                         <div className="space-y-4">
                           <p className="text-sm text-muted-foreground">
-                            Pague com cartão de crédito, débito, Apple Pay ou Google Pay de forma segura.
+                            Preparando formulário de pagamento...
                           </p>
-                          <Button onClick={handlePagarOnline} className="w-full" size="lg">
-                            💳 Pagar R$ {totalFinal.toFixed(2)}
-                          </Button>
+                          <button id="auto-pay-trigger" className="hidden" onClick={handlePagarOnline} />
+                          <Loader2 className="h-6 w-6 animate-spin mx-auto" />
                         </div>
                       )}
                       {creatingIntent && (
