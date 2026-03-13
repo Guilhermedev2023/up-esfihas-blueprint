@@ -154,9 +154,9 @@ const Pagamento = () => {
 
   // ---- ORDER CREATION (only after address confirmation) ----
   const gerarNumeroPedido = async (): Promise<number> => {
-    const { data, error } = await supabase.from('pedidos').select('numero').order('numero', { ascending: false }).limit(1);
-    if (error || !data || data.length === 0) return 1;
-    return (data[0].numero || 0) + 1;
+    const { data, error } = await supabase.rpc('proximo_numero_pedido');
+    if (error || !data) return Date.now() % 100000;
+    return data as number;
   };
 
   const salvarPedidoDB = async (
