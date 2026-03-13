@@ -78,8 +78,9 @@ const Cadastro = () => {
       return;
     }
 
-    if (formData.senha.length < 6) {
-      toast.error('A senha deve ter no mínimo 6 caracteres');
+    const validacao = validarSenha(formData.senha);
+    if (!validacao.minimo6 || !validacao.maiuscula || !validacao.minuscula || !validacao.numero) {
+      toast.error('A senha não atende todos os requisitos de segurança');
       return;
     }
 
