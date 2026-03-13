@@ -239,6 +239,7 @@ const Cadastro = () => {
               </Link>
             </div>
           </form>
+          </div>
         </CardContent>
       </Card>
     </div>
