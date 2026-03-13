@@ -570,6 +570,7 @@ export default function AdminFinanceiro() {
                     <TableHeader>
                       <TableRow>
                         <TableHead>#</TableHead>
+                        <TableHead>Nome</TableHead>
                         <TableHead>Telefone</TableHead>
                         <TableHead className="text-center">Pedidos</TableHead>
                         <TableHead className="text-right">Total gasto</TableHead>
