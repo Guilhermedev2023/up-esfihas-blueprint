@@ -181,11 +181,48 @@ const Cadastro = () => {
             </div>
             <div className="space-y-2">
               <Label htmlFor="senha">Senha</Label>
-              <Input id="senha" name="senha" type="password" placeholder="Mínimo 6 caracteres" value={formData.senha} onChange={handleChange} required disabled={loading} />
+              <Input id="senha" name="senha" type="password" placeholder="Digite sua senha" value={formData.senha} onChange={handleChange} required disabled={loading} />
+              <div className="space-y-1 text-xs pt-1">
+                <p className="font-medium text-muted-foreground">Requisitos da senha:</p>
+                <div className="space-y-1">
+                  {(() => {
+                    const validacao = validarSenha(formData.senha);
+                    return (
+                      <>
+                        <div className="flex items-center gap-1">
+                          {validacao.minimo6 ? <CheckCircle className="h-3 w-3 text-green-500" /> : <XCircle className="h-3 w-3 text-red-400" />}
+                          <span className={validacao.minimo6 ? 'text-green-600' : 'text-muted-foreground'}>Mínimo 6 caracteres</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          {validacao.maiuscula ? <CheckCircle className="h-3 w-3 text-green-500" /> : <XCircle className="h-3 w-3 text-red-400" />}
+                          <span className={validacao.maiuscula ? 'text-green-600' : 'text-muted-foreground'}>Pelo menos uma letra maiúscula</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          {validacao.minuscula ? <CheckCircle className="h-3 w-3 text-green-500" /> : <XCircle className="h-3 w-3 text-red-400" />}
+                          <span className={validacao.minuscula ? 'text-green-600' : 'text-muted-foreground'}>Pelo menos uma letra minúscula</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          {validacao.numero ? <CheckCircle className="h-3 w-3 text-green-500" /> : <XCircle className="h-3 w-3 text-red-400" />}
+                          <span className={validacao.numero ? 'text-green-600' : 'text-muted-foreground'}>Pelo menos um número</span>
+                        </div>
+                      </>
+                    );
+                  })()}
+                </div>
+              </div>
             </div>
             <div className="space-y-2">
               <Label htmlFor="confirmarSenha">Confirmar senha</Label>
               <Input id="confirmarSenha" name="confirmarSenha" type="password" placeholder="Digite a senha novamente" value={formData.confirmarSenha} onChange={handleChange} required disabled={loading} />
+              {formData.confirmarSenha && (
+                <div className="flex items-center gap-1 text-xs">
+                  {formData.senha === formData.confirmarSenha ? (
+                    <><CheckCircle className="h-3 w-3 text-green-500" /> <span className="text-green-600">Senhas coincidem</span></>
+                  ) : (
+                    <><XCircle className="h-3 w-3 text-red-400" /> <span className="text-red-500">Senhas não coincidem</span></>
+                  )}
+                </div>
+              )}
             </div>
             <div className="flex items-center space-x-2">
               <Checkbox id="termos" checked={aceitoTermos} onCheckedChange={(checked) => setAceitoTermos(checked as boolean)} disabled={loading} />
