@@ -311,7 +311,7 @@ const Pagamento = () => {
     toast.success('Pagamento realizado com sucesso!');
     clearCart();
     localStorage.removeItem('pedido_observacoes');
-    navigate('/meus-pedidos');
+    navigate('/pedidos');
   };
 
   // ---- RENDER ----
