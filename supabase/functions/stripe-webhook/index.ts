@@ -65,7 +65,7 @@ serve(async (req) => {
     if (pedidoId) {
       await supabase
         .from("pedidos")
-        .update({ status: "pagamento_falhou" })
+        .update({ status: "cancelado" })
         .eq("id", pedidoId);
 
       console.log(`Pagamento falhou para pedido ${pedidoId}`);

@@ -385,11 +385,11 @@ export default function AdminFinanceiro() {
             <CardContent>
               <div className="flex flex-wrap gap-3 mb-4">
                 <FilterSelect label="Pagamento" value={filterMetodo} onChange={v => { setFilterMetodo(v); setPage(0); }}
-                  options={[{ value: 'todos', label: 'Todos' }, { value: 'pix', label: 'PIX' }, { value: 'entrega', label: 'Na Entrega' }]} />
+                  options={[{ value: 'todos', label: 'Todos' }, { value: 'card_online', label: 'Cartão Online' }, { value: 'pix_entrega', label: 'PIX' }, { value: 'dinheiro_entrega', label: 'Dinheiro' }, { value: 'maquininha_entrega', label: 'Maquininha' }]} />
                 <FilterSelect label="Status" value={filterStatus} onChange={v => { setFilterStatus(v); setPage(0); }}
-                  options={[{ value: 'todos', label: 'Todos' }, { value: 'aguardando_confirmacao', label: 'Aguardando' },
-                    { value: 'confirmado', label: 'Confirmado' }, { value: 'em_preparo', label: 'Em Preparo' },
-                    { value: 'entregue', label: 'Entregue' }, { value: 'concluido', label: 'Concluído' }, { value: 'cancelado', label: 'Cancelado' }]} />
+                  options={[{ value: 'todos', label: 'Todos' }, { value: 'pendente', label: 'Pendente' },
+                    { value: 'aceito', label: 'Aceito' }, { value: 'preparo', label: 'Em Preparo' },
+                    { value: 'saiu_entrega', label: 'Saiu p/ Entrega' }, { value: 'finalizado', label: 'Finalizado' }, { value: 'cancelado', label: 'Cancelado' }]} />
               </div>
               <div className="overflow-auto">
                 <Table>
