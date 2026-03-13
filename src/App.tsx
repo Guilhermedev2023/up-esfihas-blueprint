@@ -36,11 +36,12 @@ const App = () => (
               <Route path="/home" element={<Home />} />
               <Route path="/produto/:id" element={<Produto />} />
               <Route path="/carrinho" element={<Carrinho />} />
-              <Route path="/endereco" element={<Endereco />} />
               <Route path="/pagamento" element={<Pagamento />} />
-              <Route path="/confirmacao" element={<Confirmacao />} />
+              <Route path="/pedidos" element={<Pedidos />} />
               <Route path="/perfil" element={<Perfil />} />
-              <Route path="/meus-pedidos" element={<MeusPedidos />} />
+              <Route path="/meus-pedidos" element={<Navigate to="/pedidos" replace />} />
+              <Route path="/confirmacao" element={<Navigate to="/pedidos" replace />} />
+              <Route path="/endereco" element={<Navigate to="/pagamento" replace />} />
               <Route path="/admin/login" element={<AdminLogin />} />
               <Route path="/admin" element={<AdminRoute><Admin /></AdminRoute>} />
               <Route path="*" element={<NotFound />} />

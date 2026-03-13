@@ -14,7 +14,7 @@ import {
   Truck, CheckCircle2, MapPin, Tag, Gift, CreditCard,
   Loader2, Home, AlertCircle, Clock, Ruler, ArrowLeft, ChevronRight
 } from 'lucide-react';
-import { generateWhatsAppMessage, sendToWhatsApp } from '@/utils/whatsappMessage';
+
 import { toast } from 'sonner';
 import { useStoreOpen } from '@/hooks/useStoreOpen';
 import { ClosedStoreMessage } from '@/components/ClosedStoreMessage';
