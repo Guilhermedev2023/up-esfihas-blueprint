@@ -41,7 +41,7 @@ const PAYMENT_LABELS: Record<string, string> = {
 
 export const traduzirStatus = (status: string): string => {
   switch (status) {
-    case 'pendente': return 'Pedido recebido';
+    case 'pendente': return 'Aguardando aceitação';
     case 'aceito': return 'Pedido aceito';
     case 'preparo': return 'Em preparo';
     case 'saiu_entrega': return 'Saiu para entrega';
