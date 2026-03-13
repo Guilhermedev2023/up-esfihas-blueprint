@@ -275,45 +275,17 @@ const Pagamento = () => {
   };
 
   // ---- PAYMENT HANDLERS ----
-  const handleFinalizarWhatsApp = async (paymentType: string) => {
+  const handleFinalizarEntrega = async () => {
     if (!confirmedAddress || !pedidoCriado || !user) return;
 
-    const recalcTaxa = freteGratis ? 0 : confirmedAddress.taxaEntrega;
-    const recalcTotal = subtotal - descontoValor + recalcTaxa;
-
-    await supabase.from('pedidos').update({ metodo_pagamento: paymentType }).eq('id', pedidoCriado.id);
-
-    const paymentLabels: Record<string, string> = {
-      'pix_entrega': 'PIX na entrega',
-      'dinheiro_entrega': 'Dinheiro',
-      'maquininha_entrega': 'Maquininha (cartão)',
-    };
-
-    const orderDetails = {
-      nome: user.nome, telefone: user.telefone || '',
-      endereco: { rua: confirmedAddress.rua, numero: confirmedAddress.numero, complemento: confirmedAddress.complemento, bairro: confirmedAddress.bairro },
-      items, subtotal, taxaEntrega: recalcTaxa, total: recalcTotal,
-      metodoPagamento: 'entrega' as 'entrega',
-      observacoes: observacoes || undefined
-    };
-
-    let descontoTexto = '';
-    if (melhorDesconto) descontoTexto = `\n🏷️ ${melhorDesconto.label}: -R$ ${descontoValor.toFixed(2)}`;
-    if (freteGratis) descontoTexto += '\n🚚 Frete grátis aplicado!';
-
-    const baseMessage = generateWhatsAppMessage(orderDetails);
-    const messageWithPedido = baseMessage.replace('Olá,', `Olá, Pedido #${pedidoCriado.numero} —`);
-    const messageWithPayment = messageWithPedido.replace(
-      '💳 Pagamento:',
-      `💳 Pagamento: ${paymentLabels[paymentType] || paymentType}`
-    );
-    const message = descontoTexto ? messageWithPayment.replace('💰 Total:', `${descontoTexto}\n💰 Total:`) : messageWithPayment;
+    await supabase.from('pedidos').update({ metodo_pagamento: 'entrega' }).eq('id', pedidoCriado.id);
 
     if (cupomGerado) toast.success(`🎉 Você ganhou o cupom ${cupomGerado} para seu próximo pedido!`, { duration: 10000 });
 
+    toast.success('Pedido confirmado! Acompanhe o status na aba Pedidos.');
     clearCart();
     localStorage.removeItem('pedido_observacoes');
-    sendToWhatsApp(message);
+    navigate('/pedidos');
   };
 
   const handlePagarOnline = async () => {
