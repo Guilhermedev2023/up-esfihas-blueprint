@@ -420,7 +420,7 @@ const Pagamento = () => {
                               disabled={salvandoPedido || !isOpen}
                             >
                               {salvandoPedido ? (
-                                <><Loader2 className="h-4 w-4 animate-spin mr-2" /> Criando pedido...</>
+                                <><Loader2 className="h-4 w-4 animate-spin mr-2" /> Confirmando...</>
                               ) : (
                                 '✅ Usar esse endereço'
                               )}
@@ -507,7 +507,7 @@ const Pagamento = () => {
                                 disabled={!customDelivery?.success || salvandoPedido || !isOpen}
                               >
                                 {salvandoPedido ? (
-                                  <><Loader2 className="h-4 w-4 animate-spin mr-2" /> Criando pedido...</>
+                                  <><Loader2 className="h-4 w-4 animate-spin mr-2" /> Confirmando...</>
                                 ) : (
                                   '✅ Usar esse endereço'
                                 )}
@@ -523,7 +523,7 @@ const Pagamento = () => {
             )}
 
             {/* ========== STEP 2: PAYMENT ========== */}
-            {step === 'payment' && confirmedAddress && pedidoCriado && (
+            {step === 'payment' && confirmedAddress && (
               <div className="space-y-6">
                 {/* Confirmed address summary */}
                 <Card className="border-2 border-green-500/30 bg-green-50/50 dark:bg-green-950/20">
@@ -537,7 +537,7 @@ const Pagamento = () => {
                       {confirmedAddress.complemento && `, ${confirmedAddress.complemento}`} — {confirmedAddress.bairro}
                     </p>
                     <p className="text-sm text-muted-foreground mt-1">
-                      📦 Pedido #{pedidoCriado.numero} • {confirmedAddress.distanciaKm?.toFixed(1)} km • ~{confirmedAddress.tempoEstimado} min
+                      {confirmedAddress.distanciaKm?.toFixed(1)} km • ~{confirmedAddress.tempoEstimado} min
                     </p>
                   </CardContent>
                 </Card>
