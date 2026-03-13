@@ -287,7 +287,7 @@ const Pagamento = () => {
       if (melhorDesconto?.cupomId) await marcarCupomUsado(melhorDesconto.cupomId);
       if (numPedidos === 0) await gerarCupomSegundoPedido();
 
-      const result = await salvarPedidoDB(confirmedAddress, recalcTaxa, recalcTotal, authUserId, 'pendente');
+      const result = await salvarPedidoDB(confirmedAddress, recalcTaxa, recalcTotal, authUserId, 'aguardando_pagamento');
       if (!result) { toast.error('Erro ao criar pedido.'); return; }
 
       await supabase.from('pedidos').update({ metodo_pagamento: 'card_online' }).eq('id', result.id);
