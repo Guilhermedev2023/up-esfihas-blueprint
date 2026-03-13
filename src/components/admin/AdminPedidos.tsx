@@ -59,7 +59,7 @@ const AdminPedidos = () => {
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const knownIdsRef = useRef<Set<string>>(new Set());
   const initialLoadDone = useRef(false);
-  const { data: isStoreOpen = true } = useStoreOpen();
+
 
   // Fetch store hours to determine current cycle start
   const { data: horario } = useQuery({
