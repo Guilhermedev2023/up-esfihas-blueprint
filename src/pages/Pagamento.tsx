@@ -523,7 +523,7 @@ const Pagamento = () => {
             )}
 
             {/* ========== STEP 2: PAYMENT ========== */}
-            {step === 'payment' && confirmedAddress && pedidoCriado && (
+            {step === 'payment' && confirmedAddress && (
               <div className="space-y-6">
                 {/* Confirmed address summary */}
                 <Card className="border-2 border-green-500/30 bg-green-50/50 dark:bg-green-950/20">
