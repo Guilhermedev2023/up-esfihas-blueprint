@@ -114,15 +114,25 @@ const AdminPedidos = () => {
         'postgres_changes',
         { event: '*', schema: 'public', table: 'pedidos' },
         (payload) => {
-          if (payload.eventType === 'INSERT') {
-            const newId = (payload.new as any).id;
-            if (!knownIdsRef.current.has(newId)) {
-              knownIdsRef.current.add(newId);
+          const newRecord = payload.new as any;
+          if (payload.eventType === 'INSERT' && newRecord.status === 'pendente') {
+            if (!knownIdsRef.current.has(newRecord.id)) {
+              knownIdsRef.current.add(newRecord.id);
               if (soundEnabled) {
                 setAlertActive(true);
                 playAlertSound();
               }
-              toast.info(`🔔 Novo pedido #${(payload.new as any).numero} recebido!`);
+              toast.info(`🔔 Novo pedido #${newRecord.numero} recebido!`);
+            }
+          }
+          if (payload.eventType === 'UPDATE' && newRecord.status === 'pendente') {
+            if (!knownIdsRef.current.has(newRecord.id)) {
+              knownIdsRef.current.add(newRecord.id);
+              if (soundEnabled) {
+                setAlertActive(true);
+                playAlertSound();
+              }
+              toast.info(`🔔 Novo pedido #${newRecord.numero} recebido!`);
             }
           }
           queryClient.invalidateQueries({ queryKey: ['admin-pedidos'] });
