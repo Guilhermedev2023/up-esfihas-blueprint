@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import { ChevronRight, Clock, MapPin, Phone, CreditCard, Eye, Volume2, VolumeX } from 'lucide-react';
+import { useStoreOpen } from '@/hooks/useStoreOpen';
 
 interface Pedido {
   id: string;
@@ -58,6 +59,7 @@ const AdminPedidos = () => {
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const knownIdsRef = useRef<Set<string>>(new Set());
   const initialLoadDone = useRef(false);
+  const { data: isStoreOpen = true } = useStoreOpen();
 
   const { data: pedidos = [] } = useQuery({
     queryKey: ['admin-pedidos'],
@@ -158,8 +160,8 @@ const AdminPedidos = () => {
   const getButtonLabel = (status: string) => {
     switch (status) {
       case 'pendente': return 'Aceitar Pedido';
-      case 'aceito': return 'Iniciar Preparo';
-      case 'preparo': return 'Saiu p/ Entrega';
+      case 'aceito': return 'Despachar Pedido';
+      case 'preparo': return 'Despachar Pedido';
       case 'saiu_entrega': return 'Finalizar';
       default: return '';
     }
@@ -192,7 +194,12 @@ const AdminPedidos = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {STATUS_COLUMNS.map((col) => {
-          const colPedidos = pedidos.filter(p => p.status === col.key);
+          // Hide finalized orders when store is closed
+          const colPedidos = pedidos.filter(p => {
+            if (p.status !== col.key) return false;
+            if (col.key === 'finalizado' && !isStoreOpen) return false;
+            return true;
+          });
           return (
             <div key={col.key} className="space-y-3">
               <div className="flex items-center gap-2">

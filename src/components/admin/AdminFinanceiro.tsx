@@ -32,6 +32,7 @@ interface Pedido {
   status: string | null;
   created_at: string | null;
   telefone: string;
+  user_id: string | null;
 }
 
 const STATUS_VALIDOS = ['aceito', 'preparo', 'saiu_entrega', 'finalizado'];
@@ -178,7 +179,7 @@ function getHeatmapData(pedidos: Pedido[]) {
 }
 
 function getRecurringCustomers(pedidos: Pedido[], limit = 20) {
-  const map = new Map<string, { telefone: string; pedidos: number; total: number; ultimo: string }>();
+  const map = new Map<string, { telefone: string; pedidos: number; total: number; ultimo: string; user_id: string | null }>();
   for (const p of filterValid(pedidos)) {
     const tel = p.telefone || '';
     if (!tel) continue;
@@ -187,8 +188,9 @@ function getRecurringCustomers(pedidos: Pedido[], limit = 20) {
       ex.pedidos += 1;
       ex.total += Number(p.total);
       if (p.created_at && p.created_at > ex.ultimo) ex.ultimo = p.created_at;
+      if (!ex.user_id && (p as any).user_id) ex.user_id = (p as any).user_id;
     } else {
-      map.set(tel, { telefone: tel, pedidos: 1, total: Number(p.total), ultimo: p.created_at || '' });
+      map.set(tel, { telefone: tel, pedidos: 1, total: Number(p.total), ultimo: p.created_at || '', user_id: (p as any).user_id || null });
     }
   }
   return Array.from(map.values()).sort((a, b) => b.total - a.total).slice(0, limit);
@@ -236,6 +238,27 @@ export default function AdminFinanceiro() {
   const topByQtd = useMemo(() => getTopProducts(pedidos, 10, 'qtd'), [pedidos]);
   const topByRevenue = useMemo(() => getTopProducts(pedidos, 10, 'faturamento'), [pedidos]);
   const recurringCustomers = useMemo(() => getRecurringCustomers(pedidos), [pedidos]);
+
+  // Fetch profiles for customer names
+  const customerUserIds = useMemo(() => recurringCustomers.map(c => c.user_id).filter(Boolean) as string[], [recurringCustomers]);
+  const { data: profiles = [] } = useQuery({
+    queryKey: ['profiles-for-customers', customerUserIds],
+    queryFn: async () => {
+      if (customerUserIds.length === 0) return [];
+      const { data, error } = await supabase.from('profiles').select('user_id, nome, telefone');
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: customerUserIds.length > 0,
+  });
+  const profileMap = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const p of profiles) {
+      if (p.telefone) map.set(p.telefone, p.nome);
+      if (p.user_id) map.set(p.user_id, p.nome);
+    }
+    return map;
+  }, [profiles]);
 
   // Monthly comparison for chart
   const monthlyChartData = useMemo(() => {
@@ -547,6 +570,7 @@ export default function AdminFinanceiro() {
                     <TableHeader>
                       <TableRow>
                         <TableHead>#</TableHead>
+                        <TableHead>Nome</TableHead>
                         <TableHead>Telefone</TableHead>
                         <TableHead className="text-center">Pedidos</TableHead>
                         <TableHead className="text-right">Total gasto</TableHead>
@@ -554,15 +578,19 @@ export default function AdminFinanceiro() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {recurringCustomers.map((c, i) => (
-                        <TableRow key={c.telefone}>
-                          <TableCell className="font-bold text-muted-foreground">{i + 1}</TableCell>
-                          <TableCell className="font-mono text-sm">{c.telefone}</TableCell>
-                          <TableCell className="text-center">{c.pedidos}</TableCell>
-                          <TableCell className="text-right font-medium">{formatCurrency(c.total)}</TableCell>
-                          <TableCell className="text-sm">{c.ultimo ? new Date(c.ultimo).toLocaleDateString('pt-BR') : '-'}</TableCell>
-                        </TableRow>
-                      ))}
+                      {recurringCustomers.map((c, i) => {
+                        const nome = profileMap.get(c.telefone) || (c.user_id ? profileMap.get(c.user_id) : null) || '—';
+                        return (
+                          <TableRow key={c.telefone}>
+                            <TableCell className="font-bold text-muted-foreground">{i + 1}</TableCell>
+                            <TableCell className="text-sm font-medium">{nome}</TableCell>
+                            <TableCell className="font-mono text-sm">{c.telefone}</TableCell>
+                            <TableCell className="text-center">{c.pedidos}</TableCell>
+                            <TableCell className="text-right font-medium">{formatCurrency(c.total)}</TableCell>
+                            <TableCell className="text-sm">{c.ultimo ? new Date(c.ultimo).toLocaleDateString('pt-BR') : '-'}</TableCell>
+                          </TableRow>
+                        );
+                      })}
                     </TableBody>
                   </Table>
                 </div>

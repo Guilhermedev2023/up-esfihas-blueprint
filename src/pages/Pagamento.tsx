@@ -219,10 +219,9 @@ const Pagamento = () => {
     await supabase.rpc('usar_cupom', { _cupom_id: cupomId });
   };
 
-  // Called when user clicks "Usar esse endereço"
+  // Called when user clicks "Usar esse endereço" - only confirms address, no order creation
   const handleConfirmAddress = async (address: ConfirmedAddress) => {
     if (!isOpen) { toast.error('😔 O delivery está fechado no momento.'); return; }
-    if (salvandoPedido) return;
 
     if (!address.rua?.trim() || !address.numero?.trim() || !address.bairro?.trim()) {
       toast.error('Preencha o endereço completo antes de continuar.');
@@ -234,83 +233,86 @@ const Pagamento = () => {
       return;
     }
 
-    const recalcTaxa = freteGratis ? 0 : address.taxaEntrega;
-    const recalcTotal = subtotal - descontoValor + recalcTaxa;
+    setConfirmedAddress(address);
+    setDeliveryFee(address.taxaEntrega);
+    setStep('payment');
+  };
 
-    if (![recalcTaxa, subtotal, recalcTotal].every((value) => Number.isFinite(value))) {
-      toast.error('Valores do pedido inválidos. Recalcule o frete e tente novamente.');
-      return;
-    }
-
-    const { data: authData, error: authError } = await supabase.auth.getUser();
-    const authUserId = authData.user?.id;
-
-    if (authError || !authUserId) {
-      toast.error('Sessão expirada. Faça login novamente.');
-      return;
-    }
-
+  // ---- PAYMENT HANDLERS ----
+  const handleFinalizarEntrega = async () => {
+    if (!confirmedAddress || !user) return;
     setSalvandoPedido(true);
 
     try {
-      setConfirmedAddress(address);
-      setDeliveryFee(address.taxaEntrega);
+      const { data: authData, error: authError } = await supabase.auth.getUser();
+      const authUserId = authData.user?.id;
+      if (authError || !authUserId) { toast.error('Sessão expirada.'); return; }
+
+      const recalcTaxa = freteGratis ? 0 : confirmedAddress.taxaEntrega;
+      const recalcTotal = subtotal - descontoValor + recalcTaxa;
 
       if (melhorDesconto?.cupomId) await marcarCupomUsado(melhorDesconto.cupomId);
       if (numPedidos === 0) await gerarCupomSegundoPedido();
 
-      const result = await salvarPedidoDB(address, recalcTaxa, recalcTotal, authUserId, 'pendente');
-      if (!result) {
-        toast.error('Erro ao criar pedido. Tente novamente.');
-        return;
-      }
+      const result = await salvarPedidoDB(confirmedAddress, recalcTaxa, recalcTotal, authUserId, 'pendente');
+      if (!result) { toast.error('Erro ao criar pedido.'); return; }
 
-      setPedidoCriado(result);
-      setStep('payment');
-      toast.success(`Pedido #${result.numero} criado! Escolha a forma de pagamento.`);
+      await supabase.from('pedidos').update({ metodo_pagamento: 'entrega' }).eq('id', result.id);
+
+      if (cupomGerado) toast.success(`🎉 Você ganhou o cupom ${cupomGerado} para seu próximo pedido!`, { duration: 10000 });
+
+      toast.success('Pedido confirmado! Acompanhe o status na aba Pedidos.');
+      localStorage.setItem('pedido_enviado_sucesso', 'true');
+      clearCart();
+      localStorage.removeItem('pedido_observacoes');
+      navigate('/carrinho');
     } finally {
       setSalvandoPedido(false);
     }
   };
 
-  // ---- PAYMENT HANDLERS ----
-  const handleFinalizarEntrega = async () => {
-    if (!confirmedAddress || !pedidoCriado || !user) return;
-
-    await supabase.from('pedidos').update({ metodo_pagamento: 'entrega' }).eq('id', pedidoCriado.id);
-
-    if (cupomGerado) toast.success(`🎉 Você ganhou o cupom ${cupomGerado} para seu próximo pedido!`, { duration: 10000 });
-
-    toast.success('Pedido confirmado! Acompanhe o status na aba Pedidos.');
-    clearCart();
-    localStorage.removeItem('pedido_observacoes');
-    navigate('/pedidos');
-  };
-
   const handlePagarOnline = async () => {
-    if (!pedidoCriado) return;
+    if (!confirmedAddress || !user) return;
+    setSalvandoPedido(true);
     setCreatingIntent(true);
 
-    await supabase.from('pedidos').update({ metodo_pagamento: 'card_online' }).eq('id', pedidoCriado.id);
-
     try {
+      const { data: authData, error: authError } = await supabase.auth.getUser();
+      const authUserId = authData.user?.id;
+      if (authError || !authUserId) { toast.error('Sessão expirada.'); return; }
+
+      const recalcTaxa = freteGratis ? 0 : confirmedAddress.taxaEntrega;
+      const recalcTotal = subtotal - descontoValor + recalcTaxa;
+
+      if (melhorDesconto?.cupomId) await marcarCupomUsado(melhorDesconto.cupomId);
+      if (numPedidos === 0) await gerarCupomSegundoPedido();
+
+      const result = await salvarPedidoDB(confirmedAddress, recalcTaxa, recalcTotal, authUserId, 'pendente');
+      if (!result) { toast.error('Erro ao criar pedido.'); return; }
+
+      await supabase.from('pedidos').update({ metodo_pagamento: 'card_online' }).eq('id', result.id);
+      setPedidoCriado(result);
+
       const { data, error } = await supabase.functions.invoke('create-payment-intent', {
-        body: { pedido_id: pedidoCriado.id, amount: Math.round(totalFinal * 100) },
+        body: { pedido_id: result.id, amount: Math.round(recalcTotal * 100) },
       });
       if (error) throw error;
       setClientSecret(data.clientSecret);
     } catch (err: any) {
       toast.error('Erro ao iniciar pagamento: ' + (err.message || 'tente novamente'));
+    } finally {
+      setSalvandoPedido(false);
+      setCreatingIntent(false);
     }
-    setCreatingIntent(false);
   };
 
   const handleStripeSuccess = () => {
     if (cupomGerado) toast.success(`🎉 Você ganhou o cupom ${cupomGerado} para seu próximo pedido!`, { duration: 10000 });
     toast.success('Pagamento realizado com sucesso!');
+    localStorage.setItem('pedido_enviado_sucesso', 'true');
     clearCart();
     localStorage.removeItem('pedido_observacoes');
-    navigate('/pedidos');
+    navigate('/carrinho');
   };
 
   // ---- RENDER ----

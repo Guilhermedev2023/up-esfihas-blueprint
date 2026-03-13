@@ -13,10 +13,9 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 
 const STATUS_STEPS = [
-  { key: 'pendente', label: 'Pedido recebido', icon: Package, progress: 10 },
-  { key: 'aceito', label: 'Pedido aceito', icon: CheckCircle2, progress: 30 },
-  { key: 'preparo', label: 'Em preparo', icon: ChefHat, progress: 55 },
-  { key: 'saiu_entrega', label: 'Saiu p/ entrega', icon: Truck, progress: 80 },
+  { key: 'aceito', label: 'Pedido aceito', icon: CheckCircle2, progress: 25 },
+  { key: 'preparo', label: 'Em preparo', icon: ChefHat, progress: 50 },
+  { key: 'saiu_entrega', label: 'Saiu p/ entrega', icon: Truck, progress: 75 },
   { key: 'finalizado', label: 'Finalizado', icon: CheckCircle2, progress: 100 },
 ];
 
@@ -33,6 +32,7 @@ const traduzirStatus = (status: string): string => {
 };
 
 const getStatusProgress = (status: string) => {
+  if (status === 'pendente') return 10;
   const step = STATUS_STEPS.find(s => s.key === status);
   return step?.progress || 5;
 };
