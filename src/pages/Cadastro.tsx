@@ -15,8 +15,10 @@ const Cadastro = () => {
     nome: '',
     telefone: '',
     email: '',
-    endereco: '',
+    rua: '',
+    numero: '',
     bairro: '',
+    complemento: '',
     senha: '',
     confirmarSenha: ''
   });
@@ -27,7 +29,6 @@ const Cadastro = () => {
   const { register } = useAuth();
   const navigate = useNavigate();
 
-  // Fetch bairros from database
   useEffect(() => {
     const fetchBairros = async () => {
       const { data, error } = await supabase
@@ -39,15 +40,7 @@ const Cadastro = () => {
       if (!error && data) {
         setBairrosDisponiveis(data.map(b => b.nome));
       } else {
-        // Fallback bairros if fetch fails
-        setBairrosDisponiveis([
-          'Cachoeira',
-          'Ponta das Canas',
-          'Ingleses',
-          'Canasvieiras',
-          'Jurerê',
-          'Vargem Grande'
-        ]);
+        setBairrosDisponiveis(['Cachoeira', 'Ponta das Canas', 'Ingleses', 'Canasvieiras', 'Jurerê', 'Vargem Grande']);
       }
     };
     fetchBairros();
@@ -66,8 +59,8 @@ const Cadastro = () => {
       return;
     }
 
-    if (!formData.endereco) {
-      toast.error('O endereço é obrigatório');
+    if (!formData.rua.trim() || !formData.numero.trim()) {
+      toast.error('Preencha a rua e o número');
       return;
     }
 
@@ -93,7 +86,6 @@ const Cadastro = () => {
 
     setLoading(true);
 
-    // Check for duplicate phone
     const { data: existingPhone } = await supabase
       .from('profiles')
       .select('id')
@@ -106,11 +98,14 @@ const Cadastro = () => {
       return;
     }
 
+    // Build address string: "Rua, Número, Complemento"
+    const endereco = [formData.rua.trim(), formData.numero.trim(), formData.complemento.trim()].filter(Boolean).join(', ');
+
     const success = await register({
       nome: formData.nome,
       email: formData.email,
       telefone: formData.telefone,
-      endereco: formData.endereco,
+      endereco,
       bairro: formData.bairro,
       senha: formData.senha
     });
@@ -135,122 +130,61 @@ const Cadastro = () => {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="nome">Nome completo</Label>
-              <Input
-                id="nome"
-                name="nome"
-                placeholder="Digite seu nome"
-                value={formData.nome}
-                onChange={handleChange}
-                required
-                disabled={loading}
-              />
+              <Input id="nome" name="nome" placeholder="Digite seu nome" value={formData.nome} onChange={handleChange} required disabled={loading} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="telefone">Telefone</Label>
-              <Input
-                id="telefone"
-                name="telefone"
-                type="tel"
-                placeholder="(XX) XXXXX-XXXX"
-                value={formData.telefone}
-                onChange={handleChange}
-                required
-                disabled={loading}
-              />
+              <Input id="telefone" name="telefone" type="tel" placeholder="(XX) XXXXX-XXXX" value={formData.telefone} onChange={handleChange} required disabled={loading} />
+            </div>
+
+            {/* Address fields */}
+            <div className="space-y-2">
+              <Label htmlFor="rua">Rua *</Label>
+              <Input id="rua" name="rua" placeholder="Nome da rua" value={formData.rua} onChange={handleChange} required disabled={loading} />
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="numero">Número *</Label>
+                <Input id="numero" name="numero" placeholder="Número" value={formData.numero} onChange={handleChange} required disabled={loading} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="complemento">Complemento</Label>
+                <Input id="complemento" name="complemento" placeholder="Apto, bloco, etc." value={formData.complemento} onChange={handleChange} disabled={loading} />
+              </div>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="endereco">Endereço completo</Label>
-              <Input
-                id="endereco"
-                name="endereco"
-                placeholder="Rua, número, complemento"
-                value={formData.endereco}
-                onChange={handleChange}
-                required
-                disabled={loading}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="bairro">Bairro</Label>
+              <Label htmlFor="bairro">Bairro *</Label>
               <select
-                id="bairro"
-                name="bairro"
-                value={formData.bairro}
-                onChange={handleChange}
-                required
-                disabled={loading}
+                id="bairro" name="bairro" value={formData.bairro} onChange={handleChange} required disabled={loading}
                 className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <option value="">Selecione seu bairro</option>
                 {bairrosDisponiveis.map((bairro) => (
-                  <option key={bairro} value={bairro}>
-                    {bairro}
-                  </option>
+                  <option key={bairro} value={bairro}>{bairro}</option>
                 ))}
               </select>
             </div>
+
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                name="email"
-                type="email"
-                placeholder="Digite seu email"
-                value={formData.email}
-                onChange={handleChange}
-                required
-                disabled={loading}
-              />
+              <Input id="email" name="email" type="email" placeholder="Digite seu email" value={formData.email} onChange={handleChange} required disabled={loading} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="senha">Senha</Label>
-              <Input
-                id="senha"
-                name="senha"
-                type="password"
-                placeholder="Mínimo 6 caracteres"
-                value={formData.senha}
-                onChange={handleChange}
-                required
-                disabled={loading}
-              />
+              <Input id="senha" name="senha" type="password" placeholder="Mínimo 6 caracteres" value={formData.senha} onChange={handleChange} required disabled={loading} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="confirmarSenha">Confirmar senha</Label>
-              <Input
-                id="confirmarSenha"
-                name="confirmarSenha"
-                type="password"
-                placeholder="Digite a senha novamente"
-                value={formData.confirmarSenha}
-                onChange={handleChange}
-                required
-                disabled={loading}
-              />
+              <Input id="confirmarSenha" name="confirmarSenha" type="password" placeholder="Digite a senha novamente" value={formData.confirmarSenha} onChange={handleChange} required disabled={loading} />
             </div>
             <div className="flex items-center space-x-2">
-              <Checkbox 
-                id="termos" 
-                checked={aceitoTermos}
-                onCheckedChange={(checked) => setAceitoTermos(checked as boolean)}
-                disabled={loading}
-              />
-              <label
-                htmlFor="termos"
-                className="text-sm leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-              >
+              <Checkbox id="termos" checked={aceitoTermos} onCheckedChange={(checked) => setAceitoTermos(checked as boolean)} disabled={loading} />
+              <label htmlFor="termos" className="text-sm leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
                 Aceito os Termos de Uso
               </label>
             </div>
             <Button type="submit" className="w-full" size="lg" disabled={loading}>
-              {loading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Criando conta...
-                </>
-              ) : (
-                'Criar Conta'
-              )}
+              {loading ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Criando conta...</>) : 'Criar Conta'}
             </Button>
             <div className="text-center">
               <Link to="/login" className="text-sm text-primary hover:underline">
