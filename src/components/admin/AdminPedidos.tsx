@@ -189,11 +189,6 @@ const AdminPedidos = () => {
   const formatDate = (date: string) =>
     new Date(date).toLocaleDateString('pt-BR');
 
-  const formatTime = (date: string) =>
-    new Date(date).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-
-  const formatDate = (date: string) =>
-    new Date(date).toLocaleDateString('pt-BR');
 
   return (
     <div className="space-y-4">
