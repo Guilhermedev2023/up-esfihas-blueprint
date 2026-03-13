@@ -24,23 +24,31 @@ interface Pedido {
 }
 
 const STATUS_COLUMNS = [
-  { key: 'pendente', label: 'WhatsApp (Pendente)', color: 'bg-orange-500', next: 'confirmado' },
-  { key: 'pago', label: 'Pago Online', color: 'bg-yellow-500', next: 'confirmado' },
-  { key: 'confirmado', label: 'Aceito', color: 'bg-blue-400', next: 'em_preparo' },
-  { key: 'em_preparo', label: 'Em Preparo', color: 'bg-blue-500', next: 'saiu_entrega' },
-  { key: 'saiu_entrega', label: 'Saiu p/ Entrega', color: 'bg-purple-500', next: 'concluido' },
-  { key: 'concluido', label: 'Finalizado', color: 'bg-green-500', next: null },
+  { key: 'pendente', label: 'WhatsApp (Pendente)', color: 'bg-orange-500', next: 'aceito' },
+  { key: 'aceito', label: 'Aceitar Pedido', color: 'bg-blue-400', next: 'preparo' },
+  { key: 'preparo', label: 'Em Preparo', color: 'bg-blue-500', next: 'saiu_entrega' },
+  { key: 'saiu_entrega', label: 'Saiu p/ Entrega', color: 'bg-purple-500', next: 'finalizado' },
+  { key: 'finalizado', label: 'Finalizado', color: 'bg-green-500', next: null },
 ];
 
 const PAYMENT_LABELS: Record<string, string> = {
   'card_online': '💳 Cartão Online',
-  'online': '💳 Online',
   'pix_entrega': 'PIX na Entrega',
   'dinheiro_entrega': '💵 Dinheiro',
   'maquininha_entrega': '💳 Maquininha',
   'pendente': '⏳ Pendente',
-  'pix': 'PIX',
-  'entrega': '🚚 Na Entrega',
+};
+
+export const traduzirStatus = (status: string): string => {
+  switch (status) {
+    case 'pendente': return 'Pedido recebido';
+    case 'aceito': return 'Pedido aceito';
+    case 'preparo': return 'Em preparo';
+    case 'saiu_entrega': return 'Saiu para entrega';
+    case 'finalizado': return 'Pedido finalizado';
+    case 'cancelado': return 'Cancelado';
+    default: return status;
+  }
 };
 
 const AdminPedidos = () => {
@@ -64,7 +72,6 @@ const AdminPedidos = () => {
     },
   });
 
-  // Track known IDs to detect truly new orders
   useEffect(() => {
     if (pedidos.length > 0 && !initialLoadDone.current) {
       knownIdsRef.current = new Set(pedidos.map(p => p.id));
@@ -72,7 +79,6 @@ const AdminPedidos = () => {
     }
   }, [pedidos]);
 
-  // Realtime subscription for new orders
   useEffect(() => {
     const channel = supabase
       .channel('admin-pedidos-realtime')
@@ -96,9 +102,7 @@ const AdminPedidos = () => {
       )
       .subscribe();
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    return () => { supabase.removeChannel(channel); };
   }, [soundEnabled, queryClient]);
 
   const playAlertSound = useCallback(() => {
@@ -128,11 +132,8 @@ const AdminPedidos = () => {
     }
   }, []);
 
-  // Cleanup interval on unmount
   useEffect(() => {
-    return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-    };
+    return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
   }, []);
 
   const updateStatus = useMutation({
@@ -151,16 +152,15 @@ const AdminPedidos = () => {
   });
 
   const handleAdvanceStatus = (pedido: Pedido, nextStatus: string) => {
-    if (pedido.status === 'pago' || pedido.status === 'pendente') stopAlert();
+    if (pedido.status === 'pendente') stopAlert();
     updateStatus.mutate({ id: pedido.id, newStatus: nextStatus });
   };
 
   const getButtonLabel = (status: string) => {
     switch (status) {
       case 'pendente': return 'Aceitar Pedido';
-      case 'pago': return 'Aceitar Pedido';
-      case 'confirmado': return 'Iniciar Preparo';
-      case 'em_preparo': return 'Saiu p/ Entrega';
+      case 'aceito': return 'Iniciar Preparo';
+      case 'preparo': return 'Saiu p/ Entrega';
       case 'saiu_entrega': return 'Finalizar';
       default: return '';
     }
@@ -174,34 +174,24 @@ const AdminPedidos = () => {
 
   return (
     <div className="space-y-4">
-      {/* Alert bar */}
       {alertActive && (
         <div className="bg-yellow-500/20 border border-yellow-500 rounded-lg p-4 flex items-center justify-between animate-pulse">
           <div className="flex items-center gap-2">
             <Volume2 className="h-5 w-5 text-yellow-600" />
             <span className="font-semibold text-yellow-700">🔔 Novo pedido recebido!</span>
           </div>
-          <Button size="sm" variant="outline" onClick={stopAlert}>
-            Parar alerta
-          </Button>
+          <Button size="sm" variant="outline" onClick={stopAlert}>Parar alerta</Button>
         </div>
       )}
 
-      {/* Sound toggle */}
       <div className="flex justify-end">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => setSoundEnabled(!soundEnabled)}
-          className="text-muted-foreground"
-        >
+        <Button variant="ghost" size="sm" onClick={() => setSoundEnabled(!soundEnabled)} className="text-muted-foreground">
           {soundEnabled ? <Volume2 className="h-4 w-4 mr-1" /> : <VolumeX className="h-4 w-4 mr-1" />}
           {soundEnabled ? 'Som ativado' : 'Som desativado'}
         </Button>
       </div>
 
-      {/* Kanban Board */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
         {STATUS_COLUMNS.map((col) => {
           const colPedidos = pedidos.filter(p => p.status === col.key);
           return (
@@ -239,20 +229,11 @@ const AdminPedidos = () => {
                       </div>
 
                       <div className="flex gap-1">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="flex-1 h-7 text-xs"
-                          onClick={() => setSelectedPedido(pedido)}
-                        >
+                        <Button variant="ghost" size="sm" className="flex-1 h-7 text-xs" onClick={() => setSelectedPedido(pedido)}>
                           <Eye className="h-3 w-3 mr-1" /> Ver
                         </Button>
                         {col.next && (
-                          <Button
-                            size="sm"
-                            className="flex-1 h-7 text-xs"
-                            onClick={() => handleAdvanceStatus(pedido, col.next!)}
-                          >
+                          <Button size="sm" className="flex-1 h-7 text-xs" onClick={() => handleAdvanceStatus(pedido, col.next!)}>
                             {getButtonLabel(pedido.status)}
                             <ChevronRight className="h-3 w-3 ml-1" />
                           </Button>
@@ -272,7 +253,6 @@ const AdminPedidos = () => {
         })}
       </div>
 
-      {/* Order detail modal */}
       <Dialog open={!!selectedPedido} onOpenChange={() => setSelectedPedido(null)}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
@@ -298,7 +278,7 @@ const AdminPedidos = () => {
                 </div>
                 <div>
                   <p className="text-muted-foreground">Status</p>
-                  <Badge>{selectedPedido.status}</Badge>
+                  <Badge>{traduzirStatus(selectedPedido.status)}</Badge>
                 </div>
               </div>
 
