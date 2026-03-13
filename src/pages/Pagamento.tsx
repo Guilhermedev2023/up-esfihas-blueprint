@@ -37,7 +37,7 @@ export interface ConfirmedAddress {
   tempoEstimado?: number;
 }
 
-type PaymentMethod = 'card_online' | 'pix_entrega' | 'dinheiro_entrega' | 'maquininha_entrega' | '';
+type PaymentMethod = 'card_online' | 'entrega' | '';
 
 const Pagamento = () => {
   const navigate = useNavigate();
