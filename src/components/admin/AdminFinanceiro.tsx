@@ -578,15 +578,19 @@ export default function AdminFinanceiro() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {recurringCustomers.map((c, i) => (
-                        <TableRow key={c.telefone}>
-                          <TableCell className="font-bold text-muted-foreground">{i + 1}</TableCell>
-                          <TableCell className="font-mono text-sm">{c.telefone}</TableCell>
-                          <TableCell className="text-center">{c.pedidos}</TableCell>
-                          <TableCell className="text-right font-medium">{formatCurrency(c.total)}</TableCell>
-                          <TableCell className="text-sm">{c.ultimo ? new Date(c.ultimo).toLocaleDateString('pt-BR') : '-'}</TableCell>
-                        </TableRow>
-                      ))}
+                      {recurringCustomers.map((c, i) => {
+                        const nome = profileMap.get(c.telefone) || (c.user_id ? profileMap.get(c.user_id) : null) || '—';
+                        return (
+                          <TableRow key={c.telefone}>
+                            <TableCell className="font-bold text-muted-foreground">{i + 1}</TableCell>
+                            <TableCell className="text-sm font-medium">{nome}</TableCell>
+                            <TableCell className="font-mono text-sm">{c.telefone}</TableCell>
+                            <TableCell className="text-center">{c.pedidos}</TableCell>
+                            <TableCell className="text-right font-medium">{formatCurrency(c.total)}</TableCell>
+                            <TableCell className="text-sm">{c.ultimo ? new Date(c.ultimo).toLocaleDateString('pt-BR') : '-'}</TableCell>
+                          </TableRow>
+                        );
+                      })}
                     </TableBody>
                   </Table>
                 </div>
