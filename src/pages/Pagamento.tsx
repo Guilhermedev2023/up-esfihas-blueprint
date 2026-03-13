@@ -507,7 +507,7 @@ const Pagamento = () => {
                                 disabled={!customDelivery?.success || salvandoPedido || !isOpen}
                               >
                                 {salvandoPedido ? (
-                                  <><Loader2 className="h-4 w-4 animate-spin mr-2" /> Criando pedido...</>
+                                  <><Loader2 className="h-4 w-4 animate-spin mr-2" /> Confirmando...</>
                                 ) : (
                                   '✅ Usar esse endereço'
                                 )}
