@@ -584,49 +584,21 @@ const Pagamento = () => {
                             <CreditCard className="h-6 w-6 text-primary" />
                             <div>
                               <p className="font-semibold">Pagamento Online</p>
-                              <p className="text-sm text-muted-foreground">Cartão de crédito, Apple Pay, Google Pay</p>
+                              <p className="text-sm text-muted-foreground">Cartão de crédito</p>
                             </div>
                           </Label>
                         </CardContent>
                       </Card>
 
-                      {/* PIX na entrega */}
-                      <Card className="mb-4 cursor-pointer transition-all hover:border-primary hover:shadow-md">
-                        <CardContent className="flex items-center gap-4 p-4">
-                          <RadioGroupItem value="pix_entrega" id="pix_entrega" />
-                          <Label htmlFor="pix_entrega" className="flex flex-1 cursor-pointer items-center gap-3">
-                            <Smartphone className="h-6 w-6 text-primary" />
-                            <div>
-                              <p className="font-semibold">PIX</p>
-                              <p className="text-sm text-muted-foreground">Pague com PIX na entrega</p>
-                            </div>
-                          </Label>
-                        </CardContent>
-                      </Card>
-
-                      {/* Dinheiro */}
-                      <Card className="mb-4 cursor-pointer transition-all hover:border-primary hover:shadow-md">
-                        <CardContent className="flex items-center gap-4 p-4">
-                          <RadioGroupItem value="dinheiro_entrega" id="dinheiro_entrega" />
-                          <Label htmlFor="dinheiro_entrega" className="flex flex-1 cursor-pointer items-center gap-3">
-                            <Banknote className="h-6 w-6 text-primary" />
-                            <div>
-                              <p className="font-semibold">Dinheiro</p>
-                              <p className="text-sm text-muted-foreground">Pague em dinheiro na entrega</p>
-                            </div>
-                          </Label>
-                        </CardContent>
-                      </Card>
-
-                      {/* Maquininha */}
+                      {/* Na Entrega */}
                       <Card className="cursor-pointer transition-all hover:border-primary hover:shadow-md">
                         <CardContent className="flex items-center gap-4 p-4">
-                          <RadioGroupItem value="maquininha_entrega" id="maquininha_entrega" />
-                          <Label htmlFor="maquininha_entrega" className="flex flex-1 cursor-pointer items-center gap-3">
-                            <CreditCard className="h-6 w-6 text-primary" />
+                          <RadioGroupItem value="entrega" id="entrega" />
+                          <Label htmlFor="entrega" className="flex flex-1 cursor-pointer items-center gap-3">
+                            <Truck className="h-6 w-6 text-primary" />
                             <div>
-                              <p className="font-semibold">Maquininha</p>
-                              <p className="text-sm text-muted-foreground">Débito ou crédito na entrega</p>
+                              <p className="font-semibold">Na Entrega</p>
+                              <p className="text-sm text-muted-foreground">PIX, dinheiro ou maquininha (não aceitamos VR)</p>
                             </div>
                           </Label>
                         </CardContent>
