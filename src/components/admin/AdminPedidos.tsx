@@ -25,10 +25,10 @@ interface Pedido {
 }
 
 const STATUS_COLUMNS = [
-  { key: 'pendente', label: 'Aceitar Pedido', color: 'bg-orange-500', next: 'aceito' },
-  { key: 'aceito', label: 'Em Preparo', color: 'bg-blue-400', next: 'preparo' },
-  { key: 'preparo', label: 'Saiu p/ Entrega', color: 'bg-blue-500', next: 'saiu_entrega' },
-  { key: 'saiu_entrega', label: 'Finalizado', color: 'bg-purple-500', next: 'finalizado' },
+  { key: 'pendente', label: 'Aceitar Pedido', color: 'bg-orange-500', next: 'preparo', buttonLabel: 'Aceitar Pedido' },
+  { key: 'preparo', label: 'Em Preparo', color: 'bg-blue-500', next: 'saiu_entrega', buttonLabel: 'Despachar Pedido' },
+  { key: 'saiu_entrega', label: 'Saiu p/ Entrega', color: 'bg-purple-500', next: 'finalizado', buttonLabel: 'Finalizar' },
+  { key: 'finalizado', label: 'Finalizado', color: 'bg-green-600', next: null, buttonLabel: '' },
 ];
 
 const PAYMENT_LABELS: Record<string, string> = {
