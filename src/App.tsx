@@ -44,6 +44,7 @@ const App = () => (
               <Route path="/endereco" element={<Navigate to="/pagamento" replace />} />
               <Route path="/admin/login" element={<AdminLogin />} />
               <Route path="/admin" element={<AdminRoute><Admin /></AdminRoute>} />
+              <Route path="/~oauth/*" element={<Navigate to="/home" replace />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </CartProvider>
