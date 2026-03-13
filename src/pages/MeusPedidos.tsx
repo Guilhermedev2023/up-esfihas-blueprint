@@ -1,4 +1,5 @@
-import { useQuery } from '@tanstack/react-query';
+import { useEffect } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Header } from '@/components/Header';
@@ -6,34 +7,46 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { Package, Clock, ChefHat, Truck, CheckCircle2 } from 'lucide-react';
+import { Package, ChefHat, Truck, CheckCircle2, ShoppingBag, CreditCard } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation } from '@tanstack/react-query';
 
 const STATUS_STEPS = [
-  { key: 'pago', label: 'Pedido aceito', icon: Package, progress: 25 },
-  { key: 'em_preparo', label: 'Em preparo', icon: ChefHat, progress: 50 },
-  { key: 'saiu_entrega', label: 'Saiu para entrega', icon: Truck, progress: 75 },
+  { key: 'confirmado', label: 'Aceito', icon: Package, progress: 20 },
+  { key: 'em_preparo', label: 'Em preparo', icon: ChefHat, progress: 45 },
+  { key: 'saiu_entrega', label: 'Saiu p/ entrega', icon: Truck, progress: 75 },
   { key: 'concluido', label: 'Entregue', icon: CheckCircle2, progress: 100 },
 ];
 
 const getStatusProgress = (status: string) => {
+  if (status === 'pendente' || status === 'pago') return 5;
   const step = STATUS_STEPS.find(s => s.key === status);
-  return step?.progress || 10;
+  return step?.progress || 5;
 };
 
 const getStatusLabel = (status: string) => {
   switch (status) {
-    case 'aguardando_pagamento': return 'Aguardando pagamento';
-    case 'aguardando_confirmacao': return 'Aguardando confirmação';
-    case 'pago': return 'Pedido aceito';
+    case 'pendente': return 'Pedido recebido';
+    case 'pago': return 'Pagamento confirmado';
+    case 'confirmado': return 'Pedido aceito';
     case 'em_preparo': return 'Em preparo';
     case 'saiu_entrega': return 'Saiu para entrega';
     case 'concluido': return 'Entregue';
     case 'cancelado': return 'Cancelado';
     default: return status;
   }
+};
+
+const PAYMENT_LABELS: Record<string, string> = {
+  'card_online': '💳 Cartão Online',
+  'online': '💳 Online',
+  'pix_entrega': 'PIX na Entrega',
+  'dinheiro_entrega': '💵 Dinheiro',
+  'maquininha_entrega': '💳 Maquininha',
+  'pendente': '⏳ Pendente',
+  'pix': 'PIX',
+  'entrega': '🚚 Na Entrega',
 };
 
 const MeusPedidos = () => {
@@ -53,8 +66,32 @@ const MeusPedidos = () => {
       return data;
     },
     enabled: !!user?.user_id,
-    refetchInterval: 10000,
   });
+
+  // Realtime subscription for order status changes
+  useEffect(() => {
+    if (!user?.user_id) return;
+
+    const channel = supabase
+      .channel('meus-pedidos-realtime')
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'pedidos' },
+        (payload) => {
+          const updated = payload.new as any;
+          if (updated.user_id === user.user_id) {
+            queryClient.invalidateQueries({ queryKey: ['meus-pedidos'] });
+            const label = getStatusLabel(updated.status);
+            toast.info(`Pedido #${updated.numero}: ${label}`);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user?.user_id, queryClient]);
 
   const confirmarEntrega = useMutation({
     mutationFn: async (pedidoId: string) => {
@@ -92,7 +129,7 @@ const MeusPedidos = () => {
 
         {pedidos.length === 0 && !isLoading && (
           <div className="text-center py-16">
-            <Package className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+            <ShoppingBag className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
             <p className="text-muted-foreground">Você ainda não tem pedidos</p>
             <Button className="mt-4" onClick={() => navigate('/home')}>Ver Cardápio</Button>
           </div>
@@ -125,7 +162,13 @@ const MeusPedidos = () => {
                     </div>
                   </div>
 
-                  {/* Progress bar */}
+                  {/* Payment method */}
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <CreditCard className="h-3 w-3" />
+                    <span>{PAYMENT_LABELS[pedido.metodo_pagamento] || pedido.metodo_pagamento}</span>
+                  </div>
+
+                  {/* Progress timeline */}
                   {!isCancelled && (
                     <div className="space-y-2">
                       <Progress value={progress} className="h-2" />

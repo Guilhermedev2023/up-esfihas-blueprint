@@ -21,11 +21,12 @@ const Perfil = () => {
     nome: '',
     email: '',
     telefone: '',
-    endereco: '',
+    rua: '',
+    numero: '',
+    complemento: '',
     bairro: ''
   });
 
-  // Fetch bairros from database
   useEffect(() => {
     const fetchBairros = async () => {
       const { data, error } = await supabase
@@ -37,15 +38,7 @@ const Perfil = () => {
       if (!error && data) {
         setBairrosDisponiveis(data.map(b => b.nome));
       } else {
-        setBairrosDisponiveis([
-          'Cachoeira',
-          'Ponta das Canas',
-          'Ingleses',
-          'Canasvieiras',
-          'Jurere',
-          'Jurere Internacional',
-          'Vargem Grande'
-        ]);
+        setBairrosDisponiveis(['Cachoeira', 'Ponta das Canas', 'Ingleses', 'Canasvieiras', 'Jurere', 'Jurere Internacional', 'Vargem Grande']);
       }
     };
     fetchBairros();
@@ -58,11 +51,15 @@ const Perfil = () => {
     }
 
     if (user) {
+      // Parse existing "Rua, Numero, Complemento" format
+      const parts = (user.endereco || '').split(',').map(p => p.trim());
       setUserData({
         nome: user.nome || '',
         email: user.email || '',
         telefone: user.telefone || '',
-        endereco: user.endereco || '',
+        rua: parts[0] || '',
+        numero: parts[1] || '',
+        complemento: parts[2] || '',
         bairro: user.bairro || ''
       });
     }
@@ -74,15 +71,28 @@ const Perfil = () => {
       return;
     }
 
+    if (!userData.rua.trim() || !userData.numero.trim()) {
+      toast.error('Preencha a rua e o número');
+      return;
+    }
+
+    if (!userData.bairro) {
+      toast.error('Selecione um bairro');
+      return;
+    }
+
     setIsSaving(true);
     
+    // Build address string
+    const endereco = [userData.rua.trim(), userData.numero.trim(), userData.complemento.trim()].filter(Boolean).join(', ');
+
     try {
       const { error } = await supabase
         .from('profiles')
         .update({
           nome: userData.nome,
           telefone: userData.telefone,
-          endereco: userData.endereco,
+          endereco,
           bairro: userData.bairro
         })
         .eq('user_id', session.user.id);
@@ -135,20 +145,11 @@ const Perfil = () => {
                 disabled={isSaving}
               >
                 {isSaving ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Salvando...
-                  </>
+                  <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Salvando...</>
                 ) : isEditing ? (
-                  <>
-                    <Save className="mr-2 h-4 w-4" />
-                    Salvar
-                  </>
+                  <><Save className="mr-2 h-4 w-4" />Salvar</>
                 ) : (
-                  <>
-                    <Edit2 className="mr-2 h-4 w-4" />
-                    Editar
-                  </>
+                  <><Edit2 className="mr-2 h-4 w-4" />Editar</>
                 )}
               </Button>
             </div>
@@ -165,11 +166,7 @@ const Perfil = () => {
                 <div className="space-y-2">
                   <Label className="text-foreground">Nome completo</Label>
                   {isEditing ? (
-                    <Input
-                      value={userData.nome}
-                      onChange={(e) => setUserData({ ...userData, nome: e.target.value })}
-                      disabled={isSaving}
-                    />
+                    <Input value={userData.nome} onChange={(e) => setUserData({ ...userData, nome: e.target.value })} disabled={isSaving} />
                   ) : (
                     <p className="rounded-lg bg-muted p-3 text-foreground">{userData.nome || '-'}</p>
                   )}
@@ -187,11 +184,7 @@ const Perfil = () => {
                   Telefone
                 </Label>
                 {isEditing ? (
-                  <Input
-                    value={userData.telefone}
-                    onChange={(e) => setUserData({ ...userData, telefone: e.target.value })}
-                    disabled={isSaving}
-                  />
+                  <Input value={userData.telefone} onChange={(e) => setUserData({ ...userData, telefone: e.target.value })} disabled={isSaving} />
                 ) : (
                   <p className="rounded-lg bg-muted p-3 text-foreground">{userData.telefone || '-'}</p>
                 )}
@@ -207,35 +200,43 @@ const Perfil = () => {
               
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label className="text-foreground">Endereço (Rua, Número, Complemento)</Label>
+                  <Label className="text-foreground">Rua *</Label>
                   {isEditing ? (
-                    <Input
-                      value={userData.endereco}
-                      onChange={(e) => setUserData({ ...userData, endereco: e.target.value })}
-                      placeholder="Ex: Rua das Flores, 123, Apto 101"
-                      disabled={isSaving}
-                    />
+                    <Input value={userData.rua} onChange={(e) => setUserData({ ...userData, rua: e.target.value })} placeholder="Nome da rua" disabled={isSaving} />
                   ) : (
-                    <p className="rounded-lg bg-muted p-3 text-foreground">{userData.endereco || '-'}</p>
+                    <p className="rounded-lg bg-muted p-3 text-foreground">{userData.rua || '-'}</p>
                   )}
+                </div>
+
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label className="text-foreground">Número *</Label>
+                    {isEditing ? (
+                      <Input value={userData.numero} onChange={(e) => setUserData({ ...userData, numero: e.target.value })} placeholder="Número" disabled={isSaving} />
+                    ) : (
+                      <p className="rounded-lg bg-muted p-3 text-foreground">{userData.numero || '-'}</p>
+                    )}
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-foreground">Complemento</Label>
+                    {isEditing ? (
+                      <Input value={userData.complemento} onChange={(e) => setUserData({ ...userData, complemento: e.target.value })} placeholder="Apto, bloco, etc." disabled={isSaving} />
+                    ) : (
+                      <p className="rounded-lg bg-muted p-3 text-foreground">{userData.complemento || '-'}</p>
+                    )}
+                  </div>
                 </div>
                 
                 <div className="space-y-2">
-                  <Label className="text-foreground">Bairro</Label>
+                  <Label className="text-foreground">Bairro *</Label>
                   {isEditing ? (
-                    <Select
-                      value={userData.bairro}
-                      onValueChange={(value) => setUserData({ ...userData, bairro: value })}
-                      disabled={isSaving}
-                    >
+                    <Select value={userData.bairro} onValueChange={(value) => setUserData({ ...userData, bairro: value })} disabled={isSaving}>
                       <SelectTrigger>
                         <SelectValue placeholder="Selecione o bairro" />
                       </SelectTrigger>
                       <SelectContent>
                         {bairrosDisponiveis.map((bairro) => (
-                          <SelectItem key={bairro} value={bairro}>
-                            {bairro}
-                          </SelectItem>
+                          <SelectItem key={bairro} value={bairro}>{bairro}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
@@ -248,27 +249,11 @@ const Perfil = () => {
 
             {isEditing && (
               <div className="flex gap-3 pt-4">
-                <Button 
-                  variant="outline" 
-                  className="flex-1" 
-                  onClick={() => setIsEditing(false)}
-                  disabled={isSaving}
-                >
+                <Button variant="outline" className="flex-1" onClick={() => setIsEditing(false)} disabled={isSaving}>
                   Cancelar
                 </Button>
-                <Button 
-                  className="flex-1" 
-                  onClick={handleSave}
-                  disabled={isSaving}
-                >
-                  {isSaving ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Salvando...
-                    </>
-                  ) : (
-                    'Salvar Alterações'
-                  )}
+                <Button className="flex-1" onClick={handleSave} disabled={isSaving}>
+                  {isSaving ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" />Salvando...</>) : 'Salvar Alterações'}
                 </Button>
               </div>
             )}

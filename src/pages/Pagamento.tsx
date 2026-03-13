@@ -11,8 +11,9 @@ import { Input } from '@/components/ui/input';
 import { useCart } from '@/contexts/CartContext';
 import { useAuth } from '@/contexts/AuthContext';
 import {
-  QrCode, Truck, Copy, CheckCircle2, MapPin, Tag, Gift, CreditCard,
-  Loader2, Home, AlertCircle, Clock, Ruler, ArrowLeft, ChevronRight
+  Truck, CheckCircle2, MapPin, Tag, Gift, CreditCard,
+  Loader2, Home, AlertCircle, Clock, Ruler, ArrowLeft, ChevronRight,
+  Banknote, Smartphone
 } from 'lucide-react';
 import { generateWhatsAppMessage, sendToWhatsApp } from '@/utils/whatsappMessage';
 import { toast } from 'sonner';
@@ -22,8 +23,6 @@ import { usePromocoes, useCuponsUsuario, useContarPedidosTelefone, calcularDesco
 import { supabase } from '@/integrations/supabase/client';
 import { calculateDeliveryFee, DeliveryCalculation } from '@/hooks/useDeliveryConfig';
 import StripeCheckoutForm from '@/components/StripeCheckoutForm';
-
-const pixCode = '00020126740014BR.GOV.BCB.PIX0114436060510001740234linknabio.gg/christopher-rubin-6235204000053039865802BR5921CHRISTOPHER-RUBIN-6236009SAO PAULO62070503***6304CFF6';
 
 type CheckoutStep = 'address' | 'payment';
 
@@ -37,6 +36,8 @@ export interface ConfirmedAddress {
   distanciaKm?: number;
   tempoEstimado?: number;
 }
+
+type PaymentMethod = 'card_online' | 'pix_entrega' | 'dinheiro_entrega' | 'maquininha_entrega' | '';
 
 const Pagamento = () => {
   const navigate = useNavigate();
@@ -61,8 +62,7 @@ const Pagamento = () => {
   const [customDelivery, setCustomDelivery] = useState<DeliveryCalculation | null>(null);
 
   // Payment state
-  const [metodoPagamento, setMetodoPagamento] = useState<'pix' | 'entrega' | 'online' | ''>('');
-  const [pixCopiado, setPixCopiado] = useState(false);
+  const [metodoPagamento, setMetodoPagamento] = useState<PaymentMethod>('');
   const [salvandoPedido, setSalvandoPedido] = useState(false);
   const [cupomGerado, setCupomGerado] = useState<string | null>(null);
 
@@ -141,7 +141,7 @@ const Pagamento = () => {
   const isCustomFormValid = customRua.trim() && customNumero.trim() && customBairro.trim();
 
   const handleCalculateCustomDelivery = async () => {
-    if (!isCustomFormValid) { toast.error('Preencha todos os campos obrigatórios'); return; }
+    if (!isCustomFormValid) { toast.error('Preencha Rua, Número e Bairro'); return; }
     const fullAddress = `${customRua.trim()}, ${customNumero.trim()}, ${customBairro.trim()}, Florianópolis, SC`;
     setIsCalculating(true);
     try {
@@ -152,7 +152,7 @@ const Pagamento = () => {
     finally { setIsCalculating(false); }
   };
 
-  // ---- ORDER CREATION (only after address confirmation) ----
+  // ---- ORDER CREATION ----
   const gerarNumeroPedido = async (): Promise<number> => {
     const { data, error } = await supabase.rpc('proximo_numero_pedido');
     if (error || !data) return Date.now() % 100000;
@@ -191,21 +191,7 @@ const Pagamento = () => {
       const { data, error } = await supabase.from('pedidos').insert(pedidoData).select('id').single();
 
       if (error) {
-        console.error('Erro ao criar pedido (detalhado):', {
-          code: error.code,
-          message: error.message,
-          details: error.details,
-          hint: error.hint,
-          payload: {
-            numero: pedidoData.numero,
-            user_id: pedidoData.user_id,
-            subtotal: pedidoData.subtotal,
-            taxa_entrega: pedidoData.taxa_entrega,
-            total: pedidoData.total,
-            metodo_pagamento: pedidoData.metodo_pagamento,
-            status: pedidoData.status,
-          },
-        });
+        console.error('Erro ao criar pedido:', error);
         return null;
       }
 
@@ -261,8 +247,7 @@ const Pagamento = () => {
     const authUserId = authData.user?.id;
 
     if (authError || !authUserId) {
-      console.error('Erro ao obter usuário autenticado para criar pedido:', authError);
-      toast.error('Sessão expirada. Faça login novamente para concluir o pedido.');
+      toast.error('Sessão expirada. Faça login novamente.');
       return;
     }
 
@@ -272,7 +257,6 @@ const Pagamento = () => {
       setConfirmedAddress(address);
       setDeliveryFee(address.taxaEntrega);
 
-      // Process promotions
       if (melhorDesconto?.cupomId) await marcarCupomUsado(melhorDesconto.cupomId);
       if (numPedidos === 0) await gerarCupomSegundoPedido();
 
@@ -291,27 +275,25 @@ const Pagamento = () => {
   };
 
   // ---- PAYMENT HANDLERS ----
-  const handleCopyPixCode = () => {
-    navigator.clipboard.writeText(pixCode);
-    setPixCopiado(true);
-    toast.success('Código PIX copiado!');
-    setTimeout(() => setPixCopiado(false), 3000);
-  };
-
-  const handleFinalizarWhatsApp = async () => {
+  const handleFinalizarWhatsApp = async (paymentType: string) => {
     if (!confirmedAddress || !pedidoCriado || !user) return;
 
     const recalcTaxa = freteGratis ? 0 : confirmedAddress.taxaEntrega;
     const recalcTotal = subtotal - descontoValor + recalcTaxa;
 
-    // Update order with payment method
-    await supabase.from('pedidos').update({ metodo_pagamento: metodoPagamento }).eq('id', pedidoCriado.id);
+    await supabase.from('pedidos').update({ metodo_pagamento: paymentType }).eq('id', pedidoCriado.id);
+
+    const paymentLabels: Record<string, string> = {
+      'pix_entrega': 'PIX na entrega',
+      'dinheiro_entrega': 'Dinheiro',
+      'maquininha_entrega': 'Maquininha (cartão)',
+    };
 
     const orderDetails = {
       nome: user.nome, telefone: user.telefone || '',
       endereco: { rua: confirmedAddress.rua, numero: confirmedAddress.numero, complemento: confirmedAddress.complemento, bairro: confirmedAddress.bairro },
       items, subtotal, taxaEntrega: recalcTaxa, total: recalcTotal,
-      metodoPagamento: metodoPagamento as 'pix' | 'entrega',
+      metodoPagamento: 'entrega' as 'entrega',
       observacoes: observacoes || undefined
     };
 
@@ -321,7 +303,11 @@ const Pagamento = () => {
 
     const baseMessage = generateWhatsAppMessage(orderDetails);
     const messageWithPedido = baseMessage.replace('Olá,', `Olá, Pedido #${pedidoCriado.numero} —`);
-    const message = descontoTexto ? messageWithPedido.replace('💰 Total:', `${descontoTexto}\n💰 Total:`) : messageWithPedido;
+    const messageWithPayment = messageWithPedido.replace(
+      '💳 Pagamento:',
+      `💳 Pagamento: ${paymentLabels[paymentType] || paymentType}`
+    );
+    const message = descontoTexto ? messageWithPayment.replace('💰 Total:', `${descontoTexto}\n💰 Total:`) : messageWithPayment;
 
     if (cupomGerado) toast.success(`🎉 Você ganhou o cupom ${cupomGerado} para seu próximo pedido!`, { duration: 10000 });
 
@@ -334,8 +320,7 @@ const Pagamento = () => {
     if (!pedidoCriado) return;
     setCreatingIntent(true);
 
-    // Update order with payment method
-    await supabase.from('pedidos').update({ metodo_pagamento: 'online' }).eq('id', pedidoCriado.id);
+    await supabase.from('pedidos').update({ metodo_pagamento: 'card_online' }).eq('id', pedidoCriado.id);
 
     try {
       const { data, error } = await supabase.functions.invoke('create-payment-intent', {
@@ -377,7 +362,7 @@ const Pagamento = () => {
         </div>
 
         <div className="grid gap-8 lg:grid-cols-3">
-          {/* Left column: main content */}
+          {/* Left column */}
           <div className="lg:col-span-2 space-y-6">
 
             {/* ========== STEP 1: ADDRESS ========== */}
@@ -590,41 +575,58 @@ const Pagamento = () => {
                     <CardTitle className="text-2xl">Forma de Pagamento</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <RadioGroup value={metodoPagamento} onValueChange={(v) => { setMetodoPagamento(v as any); setClientSecret(null); }}>
+                    <RadioGroup value={metodoPagamento} onValueChange={(v) => { setMetodoPagamento(v as PaymentMethod); setClientSecret(null); }}>
+                      {/* Online Card */}
                       <Card className="mb-4 cursor-pointer transition-all hover:border-primary hover:shadow-md">
                         <CardContent className="flex items-center gap-4 p-4">
-                          <RadioGroupItem value="online" id="online" />
-                          <Label htmlFor="online" className="flex flex-1 cursor-pointer items-center gap-3">
+                          <RadioGroupItem value="card_online" id="card_online" />
+                          <Label htmlFor="card_online" className="flex flex-1 cursor-pointer items-center gap-3">
                             <CreditCard className="h-6 w-6 text-primary" />
                             <div>
-                              <p className="font-semibold">Pagar Online</p>
-                              <p className="text-sm text-muted-foreground">Cartão, Apple Pay, Google Pay</p>
+                              <p className="font-semibold">Pagamento Online</p>
+                              <p className="text-sm text-muted-foreground">Cartão de crédito, Apple Pay, Google Pay</p>
                             </div>
                           </Label>
                         </CardContent>
                       </Card>
 
+                      {/* PIX na entrega */}
                       <Card className="mb-4 cursor-pointer transition-all hover:border-primary hover:shadow-md">
                         <CardContent className="flex items-center gap-4 p-4">
-                          <RadioGroupItem value="pix" id="pix" />
-                          <Label htmlFor="pix" className="flex flex-1 cursor-pointer items-center gap-3">
-                            <QrCode className="h-6 w-6 text-primary" />
+                          <RadioGroupItem value="pix_entrega" id="pix_entrega" />
+                          <Label htmlFor="pix_entrega" className="flex flex-1 cursor-pointer items-center gap-3">
+                            <Smartphone className="h-6 w-6 text-primary" />
                             <div>
                               <p className="font-semibold">PIX</p>
-                              <p className="text-sm text-muted-foreground">Pagamento instantâneo via WhatsApp</p>
+                              <p className="text-sm text-muted-foreground">Pague com PIX na entrega</p>
                             </div>
                           </Label>
                         </CardContent>
                       </Card>
 
+                      {/* Dinheiro */}
+                      <Card className="mb-4 cursor-pointer transition-all hover:border-primary hover:shadow-md">
+                        <CardContent className="flex items-center gap-4 p-4">
+                          <RadioGroupItem value="dinheiro_entrega" id="dinheiro_entrega" />
+                          <Label htmlFor="dinheiro_entrega" className="flex flex-1 cursor-pointer items-center gap-3">
+                            <Banknote className="h-6 w-6 text-primary" />
+                            <div>
+                              <p className="font-semibold">Dinheiro</p>
+                              <p className="text-sm text-muted-foreground">Pague em dinheiro na entrega</p>
+                            </div>
+                          </Label>
+                        </CardContent>
+                      </Card>
+
+                      {/* Maquininha */}
                       <Card className="cursor-pointer transition-all hover:border-primary hover:shadow-md">
                         <CardContent className="flex items-center gap-4 p-4">
-                          <RadioGroupItem value="entrega" id="entrega" />
-                          <Label htmlFor="entrega" className="flex flex-1 cursor-pointer items-center gap-3">
-                            <Truck className="h-6 w-6 text-primary" />
+                          <RadioGroupItem value="maquininha_entrega" id="maquininha_entrega" />
+                          <Label htmlFor="maquininha_entrega" className="flex flex-1 cursor-pointer items-center gap-3">
+                            <CreditCard className="h-6 w-6 text-primary" />
                             <div>
-                              <p className="font-semibold">Pagamento na Entrega</p>
-                              <p className="text-sm text-muted-foreground">Dinheiro ou cartão (motoboy leva maquininha)</p>
+                              <p className="font-semibold">Maquininha</p>
+                              <p className="text-sm text-muted-foreground">Débito ou crédito na entrega</p>
                             </div>
                           </Label>
                         </CardContent>
@@ -634,7 +636,7 @@ const Pagamento = () => {
                 </Card>
 
                 {/* Online Payment - Stripe */}
-                {metodoPagamento === 'online' && (
+                {metodoPagamento === 'card_online' && (
                   <Card className="border-2 border-primary/20 bg-gradient-to-br from-background to-primary/5">
                     <CardHeader>
                       <CardTitle className="flex items-center gap-2 text-xl">
@@ -646,7 +648,7 @@ const Pagamento = () => {
                       {!clientSecret && !creatingIntent && (
                         <div className="space-y-4">
                           <p className="text-sm text-muted-foreground">
-                            Pague com cartão de crédito, débito, Apple Pay ou Google Pay. Seu pagamento é processado de forma segura.
+                            Pague com cartão de crédito, débito, Apple Pay ou Google Pay de forma segura.
                           </p>
                           <Button onClick={handlePagarOnline} className="w-full" size="lg">
                             💳 Pagar R$ {totalFinal.toFixed(2)}
@@ -668,42 +670,8 @@ const Pagamento = () => {
                   </Card>
                 )}
 
-                {/* PIX */}
-                {metodoPagamento === 'pix' && (
-                  <Card className="border-2 border-primary/20 bg-gradient-to-br from-background to-primary/5">
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2 text-xl">
-                        <QrCode className="h-6 w-6 text-primary" />
-                        Pague com PIX
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-6">
-                      <div className="flex flex-col items-center space-y-4">
-                        <div className="rounded-lg bg-white p-4 shadow-lg">
-                          <img src="/images/qr-code-pix.png" alt="QR Code PIX" className="w-64 h-64 object-contain" />
-                        </div>
-                        <p className="text-sm text-center text-muted-foreground max-w-md">
-                          Escaneie o QR Code acima ou use o código PIX abaixo
-                        </p>
-                      </div>
-                      <div className="space-y-2">
-                        <Label className="text-sm font-semibold">Código Copia e Cola PIX:</Label>
-                        <div className="flex gap-2">
-                          <div className="flex-1 rounded-lg bg-muted p-3 font-mono text-xs break-all">{pixCode}</div>
-                          <Button onClick={handleCopyPixCode} variant="outline" size="icon" className="shrink-0">
-                            {pixCopiado ? <CheckCircle2 className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
-                          </Button>
-                        </div>
-                      </div>
-                      <Button onClick={handleFinalizarWhatsApp} className="w-full" size="lg">
-                        ✅ Já paguei – Enviar Comprovante no WhatsApp
-                      </Button>
-                    </CardContent>
-                  </Card>
-                )}
-
-                {/* Entrega */}
-                {metodoPagamento === 'entrega' && (
+                {/* Entrega payments (PIX, Dinheiro, Maquininha) */}
+                {(metodoPagamento === 'pix_entrega' || metodoPagamento === 'dinheiro_entrega' || metodoPagamento === 'maquininha_entrega') && (
                   <Card className="border-2 border-primary/20 bg-gradient-to-br from-background to-accent/5">
                     <CardHeader>
                       <CardTitle className="flex items-center gap-2 text-xl">
@@ -713,11 +681,23 @@ const Pagamento = () => {
                     </CardHeader>
                     <CardContent className="space-y-6">
                       <div className="rounded-lg bg-accent/10 p-6 space-y-4">
-                        <p className="text-base">
-                          💳 O motoboy levará a maquininha. Você pode pagar em <strong>cartão de crédito</strong>, <strong>débito</strong> ou <strong>dinheiro</strong>.
-                        </p>
+                        {metodoPagamento === 'pix_entrega' && (
+                          <p className="text-base">
+                            📱 Você pagará via <strong>PIX</strong> quando o motoboy chegar. Tenha o app do banco pronto!
+                          </p>
+                        )}
+                        {metodoPagamento === 'dinheiro_entrega' && (
+                          <p className="text-base">
+                            💵 Você pagará em <strong>dinheiro</strong> na entrega. Valor total: <strong>R$ {totalFinal.toFixed(2)}</strong>
+                          </p>
+                        )}
+                        {metodoPagamento === 'maquininha_entrega' && (
+                          <p className="text-base">
+                            💳 O motoboy levará a <strong>maquininha</strong>. Você pode pagar em cartão de crédito ou débito.
+                          </p>
+                        )}
                       </div>
-                      <Button onClick={handleFinalizarWhatsApp} className="w-full" size="lg">
+                      <Button onClick={() => handleFinalizarWhatsApp(metodoPagamento)} className="w-full" size="lg">
                         📲 Finalizar Pedido pelo WhatsApp
                       </Button>
                     </CardContent>
@@ -734,7 +714,6 @@ const Pagamento = () => {
                 <CardTitle>Resumo do Pedido</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                {/* Items */}
                 <div className="space-y-1">
                   {items.map(item => (
                     <div key={item.id} className="flex justify-between text-sm">

@@ -1,7 +1,7 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -24,22 +24,33 @@ interface Pedido {
 }
 
 const STATUS_COLUMNS = [
-  { key: 'pago', label: 'Aceitar Pedido', color: 'bg-yellow-500', next: 'em_preparo' },
+  { key: 'pendente', label: 'WhatsApp (Pendente)', color: 'bg-orange-500', next: 'confirmado' },
+  { key: 'pago', label: 'Pago Online', color: 'bg-yellow-500', next: 'confirmado' },
+  { key: 'confirmado', label: 'Aceito', color: 'bg-blue-400', next: 'em_preparo' },
   { key: 'em_preparo', label: 'Em Preparo', color: 'bg-blue-500', next: 'saiu_entrega' },
   { key: 'saiu_entrega', label: 'Saiu p/ Entrega', color: 'bg-purple-500', next: 'concluido' },
   { key: 'concluido', label: 'Finalizado', color: 'bg-green-500', next: null },
 ];
 
-// Also show WhatsApp orders
-const WHATSAPP_STATUS = { key: 'aguardando_confirmacao', label: 'WhatsApp (Pendente)', color: 'bg-orange-500', next: 'em_preparo' };
+const PAYMENT_LABELS: Record<string, string> = {
+  'card_online': '💳 Cartão Online',
+  'online': '💳 Online',
+  'pix_entrega': 'PIX na Entrega',
+  'dinheiro_entrega': '💵 Dinheiro',
+  'maquininha_entrega': '💳 Maquininha',
+  'pendente': '⏳ Pendente',
+  'pix': 'PIX',
+  'entrega': '🚚 Na Entrega',
+};
 
 const AdminPedidos = () => {
   const queryClient = useQueryClient();
   const [selectedPedido, setSelectedPedido] = useState<Pedido | null>(null);
   const [alertActive, setAlertActive] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(true);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-  const previousCountRef = useRef<number>(0);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const knownIdsRef = useRef<Set<string>>(new Set());
+  const initialLoadDone = useRef(false);
 
   const { data: pedidos = [] } = useQuery({
     queryKey: ['admin-pedidos'],
@@ -51,26 +62,46 @@ const AdminPedidos = () => {
       if (error) throw error;
       return data as Pedido[];
     },
-    refetchInterval: 5000,
   });
 
-  // Count new orders (pago status)
-  const newOrderCount = useMemo(() => 
-    pedidos.filter(p => p.status === 'pago').length,
-    [pedidos]
-  );
-
-  // Alert sound for new orders
+  // Track known IDs to detect truly new orders
   useEffect(() => {
-    if (newOrderCount > previousCountRef.current && soundEnabled) {
-      setAlertActive(true);
-      playAlertSound();
+    if (pedidos.length > 0 && !initialLoadDone.current) {
+      knownIdsRef.current = new Set(pedidos.map(p => p.id));
+      initialLoadDone.current = true;
     }
-    previousCountRef.current = newOrderCount;
-  }, [newOrderCount, soundEnabled]);
+  }, [pedidos]);
 
-  const playAlertSound = () => {
-    // Create simple alert beep using Web Audio API
+  // Realtime subscription for new orders
+  useEffect(() => {
+    const channel = supabase
+      .channel('admin-pedidos-realtime')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'pedidos' },
+        (payload) => {
+          if (payload.eventType === 'INSERT') {
+            const newId = (payload.new as any).id;
+            if (!knownIdsRef.current.has(newId)) {
+              knownIdsRef.current.add(newId);
+              if (soundEnabled) {
+                setAlertActive(true);
+                playAlertSound();
+              }
+              toast.info(`🔔 Novo pedido #${(payload.new as any).numero} recebido!`);
+            }
+          }
+          queryClient.invalidateQueries({ queryKey: ['admin-pedidos'] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [soundEnabled, queryClient]);
+
+  const playAlertSound = useCallback(() => {
     try {
       const ctx = new AudioContext();
       const playBeep = () => {
@@ -84,19 +115,25 @@ const AdminPedidos = () => {
         osc.stop(ctx.currentTime + 0.3);
       };
       playBeep();
-      const interval = setInterval(playBeep, 2000);
-      audioRef.current = { stop: () => clearInterval(interval) } as any;
-    } catch {
-      // Silent fail
-    }
-  };
+      if (intervalRef.current) clearInterval(intervalRef.current);
+      intervalRef.current = setInterval(playBeep, 2000);
+    } catch { /* Silent fail */ }
+  }, []);
 
-  const stopAlert = () => {
+  const stopAlert = useCallback(() => {
     setAlertActive(false);
-    if (audioRef.current && (audioRef.current as any).stop) {
-      (audioRef.current as any).stop();
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
     }
-  };
+  }, []);
+
+  // Cleanup interval on unmount
+  useEffect(() => {
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+  }, []);
 
   const updateStatus = useMutation({
     mutationFn: async ({ id, newStatus }: { id: string; newStatus: string }) => {
@@ -114,29 +151,26 @@ const AdminPedidos = () => {
   });
 
   const handleAdvanceStatus = (pedido: Pedido, nextStatus: string) => {
-    if (pedido.status === 'pago') stopAlert();
+    if (pedido.status === 'pago' || pedido.status === 'pendente') stopAlert();
     updateStatus.mutate({ id: pedido.id, newStatus: nextStatus });
   };
 
-  const allColumns = [WHATSAPP_STATUS, ...STATUS_COLUMNS];
-
   const getButtonLabel = (status: string) => {
     switch (status) {
-      case 'aguardando_confirmacao': return 'Confirmar Pedido';
+      case 'pendente': return 'Aceitar Pedido';
       case 'pago': return 'Aceitar Pedido';
+      case 'confirmado': return 'Iniciar Preparo';
       case 'em_preparo': return 'Saiu p/ Entrega';
       case 'saiu_entrega': return 'Finalizar';
       default: return '';
     }
   };
 
-  const formatTime = (date: string) => {
-    return new Date(date).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-  };
+  const formatTime = (date: string) =>
+    new Date(date).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
 
-  const formatDate = (date: string) => {
-    return new Date(date).toLocaleDateString('pt-BR');
-  };
+  const formatDate = (date: string) =>
+    new Date(date).toLocaleDateString('pt-BR');
 
   return (
     <div className="space-y-4">
@@ -167,8 +201,8 @@ const AdminPedidos = () => {
       </div>
 
       {/* Kanban Board */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-        {allColumns.map((col) => {
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+        {STATUS_COLUMNS.map((col) => {
           const colPedidos = pedidos.filter(p => p.status === col.key);
           return (
             <div key={col.key} className="space-y-3">
@@ -200,7 +234,7 @@ const AdminPedidos = () => {
                           R$ {Number(pedido.total).toFixed(2)}
                         </span>
                         <Badge variant="outline" className="text-[10px]">
-                          {pedido.metodo_pagamento}
+                          {PAYMENT_LABELS[pedido.metodo_pagamento] || pedido.metodo_pagamento}
                         </Badge>
                       </div>
 
@@ -259,7 +293,7 @@ const AdminPedidos = () => {
                   <p className="text-muted-foreground">Pagamento</p>
                   <p className="font-medium flex items-center gap-1">
                     <CreditCard className="h-3 w-3" />
-                    {selectedPedido.metodo_pagamento}
+                    {PAYMENT_LABELS[selectedPedido.metodo_pagamento] || selectedPedido.metodo_pagamento}
                   </p>
                 </div>
                 <div>
@@ -268,7 +302,6 @@ const AdminPedidos = () => {
                 </div>
               </div>
 
-              {/* Address */}
               {selectedPedido.endereco && (
                 <div className="rounded-lg bg-muted p-3 text-sm space-y-1">
                   <p className="font-semibold flex items-center gap-1">
@@ -282,7 +315,6 @@ const AdminPedidos = () => {
                 </div>
               )}
 
-              {/* Items */}
               <div className="space-y-2">
                 <p className="font-semibold text-sm">Itens do pedido</p>
                 <div className="space-y-1">
@@ -295,7 +327,6 @@ const AdminPedidos = () => {
                 </div>
               </div>
 
-              {/* Totals */}
               <div className="space-y-1 text-sm pt-2 border-t">
                 <div className="flex justify-between">
                   <span>Subtotal</span>
