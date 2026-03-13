@@ -99,6 +99,13 @@ const Pagamento = () => {
     loadKey();
   }, []);
 
+  // Auto-trigger Stripe payment intent when card_online is selected
+  useEffect(() => {
+    if (metodoPagamento === 'card_online' && !clientSecret && !creatingIntent && confirmedAddress && user) {
+      handlePagarOnline();
+    }
+  }, [metodoPagamento]);
+
   // Redirect if no items or not logged in
   useEffect(() => {
     if (items.length === 0) navigate('/carrinho');
@@ -591,13 +598,9 @@ const Pagamento = () => {
                     </CardHeader>
                     <CardContent className="space-y-6">
                       {!clientSecret && !creatingIntent && (
-                        <div className="space-y-4">
-                          <p className="text-sm text-muted-foreground">
-                            Pague com cartão de crédito, débito, Apple Pay ou Google Pay de forma segura.
-                          </p>
-                          <Button onClick={handlePagarOnline} className="w-full" size="lg">
-                            💳 Pagar R$ {totalFinal.toFixed(2)}
-                          </Button>
+                        <div className="flex flex-col items-center justify-center py-8">
+                          <Loader2 className="h-6 w-6 animate-spin mb-2" />
+                          <span className="text-sm text-muted-foreground">Preparando pagamento...</span>
                         </div>
                       )}
                       {creatingIntent && (
