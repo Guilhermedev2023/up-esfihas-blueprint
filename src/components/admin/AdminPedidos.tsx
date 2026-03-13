@@ -157,15 +157,13 @@ const AdminPedidos = () => {
     updateStatus.mutate({ id: pedido.id, newStatus: nextStatus });
   };
 
-  const getButtonLabel = (status: string) => {
-    switch (status) {
-      case 'pendente': return 'Aceitar Pedido';
-      case 'aceito': return 'Despachar Pedido';
-      case 'preparo': return 'Despachar Pedido';
-      case 'saiu_entrega': return 'Finalizar';
-      default: return '';
-    }
-  };
+  // Get today's opening time for filtering
+  const getTodayOpenTime = useCallback(() => {
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    // Default: show orders from today at 00:00 as fallback
+    return today.toISOString();
+  }, []);
 
   const formatTime = (date: string) =>
     new Date(date).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
