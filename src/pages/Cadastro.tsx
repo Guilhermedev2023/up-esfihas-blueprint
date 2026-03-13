@@ -51,6 +51,15 @@ const Cadastro = () => {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
+  const validarSenha = (senha: string) => {
+    return {
+      minimo6: senha.length >= 6,
+      maiuscula: /[A-Z]/.test(senha),
+      minuscula: /[a-z]/.test(senha),
+      numero: /[0-9]/.test(senha)
+    };
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
