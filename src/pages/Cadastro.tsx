@@ -7,12 +7,10 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
-import { Loader2 } from 'lucide-react';
+import { Loader2, CheckCircle, XCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { lovable } from '@/integrations/lovable/index';
 
 const Cadastro = () => {
-  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [formData, setFormData] = useState({
     nome: '',
     telefone: '',
@@ -53,6 +51,15 @@ const Cadastro = () => {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
+  const validarSenha = (senha: string) => {
+    return {
+      minimo6: senha.length >= 6,
+      maiuscula: /[A-Z]/.test(senha),
+      minuscula: /[a-z]/.test(senha),
+      numero: /[0-9]/.test(senha)
+    };
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -71,8 +78,9 @@ const Cadastro = () => {
       return;
     }
 
-    if (formData.senha.length < 6) {
-      toast.error('A senha deve ter no mínimo 6 caracteres');
+    const validacao = validarSenha(formData.senha);
+    if (!validacao.minimo6 || !validacao.maiuscula || !validacao.minuscula || !validacao.numero) {
+      toast.error('A senha não atende todos os requisitos de segurança');
       return;
     }
 
@@ -173,11 +181,48 @@ const Cadastro = () => {
             </div>
             <div className="space-y-2">
               <Label htmlFor="senha">Senha</Label>
-              <Input id="senha" name="senha" type="password" placeholder="Mínimo 6 caracteres" value={formData.senha} onChange={handleChange} required disabled={loading} />
+              <Input id="senha" name="senha" type="password" placeholder="Digite sua senha" value={formData.senha} onChange={handleChange} required disabled={loading} />
+              <div className="space-y-1 text-xs pt-1">
+                <p className="font-medium text-muted-foreground">Requisitos da senha:</p>
+                <div className="space-y-1">
+                  {(() => {
+                    const validacao = validarSenha(formData.senha);
+                    return (
+                      <>
+                        <div className="flex items-center gap-1">
+                          {validacao.minimo6 ? <CheckCircle className="h-3 w-3 text-primary" /> : <XCircle className="h-3 w-3 text-destructive" />}
+                          <span className={validacao.minimo6 ? 'text-primary' : 'text-muted-foreground'}>Mínimo 6 caracteres</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          {validacao.maiuscula ? <CheckCircle className="h-3 w-3 text-primary" /> : <XCircle className="h-3 w-3 text-destructive" />}
+                          <span className={validacao.maiuscula ? 'text-primary' : 'text-muted-foreground'}>Pelo menos uma letra maiúscula</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          {validacao.minuscula ? <CheckCircle className="h-3 w-3 text-primary" /> : <XCircle className="h-3 w-3 text-destructive" />}
+                          <span className={validacao.minuscula ? 'text-primary' : 'text-muted-foreground'}>Pelo menos uma letra minúscula</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          {validacao.numero ? <CheckCircle className="h-3 w-3 text-primary" /> : <XCircle className="h-3 w-3 text-destructive" />}
+                          <span className={validacao.numero ? 'text-primary' : 'text-muted-foreground'}>Pelo menos um número</span>
+                        </div>
+                      </>
+                    );
+                  })()}
+                </div>
+              </div>
             </div>
             <div className="space-y-2">
               <Label htmlFor="confirmarSenha">Confirmar senha</Label>
               <Input id="confirmarSenha" name="confirmarSenha" type="password" placeholder="Digite a senha novamente" value={formData.confirmarSenha} onChange={handleChange} required disabled={loading} />
+              {formData.confirmarSenha && (
+                <div className="flex items-center gap-1 text-xs">
+                  {formData.senha === formData.confirmarSenha ? (
+                    <><CheckCircle className="h-3 w-3 text-primary" /> <span className="text-primary">Senhas coincidem</span></>
+                  ) : (
+                    <><XCircle className="h-3 w-3 text-destructive" /> <span className="text-destructive">Senhas não coincidem</span></>
+                  )}
+                </div>
+              )}
             </div>
             <div className="flex items-center space-x-2">
               <Checkbox id="termos" checked={aceitoTermos} onCheckedChange={(checked) => setAceitoTermos(checked as boolean)} disabled={loading} />
