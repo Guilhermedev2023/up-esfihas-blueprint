@@ -1,4 +1,4 @@
-import { Instagram } from 'lucide-react';
+import { Instagram, MapPin, Clock, Phone } from 'lucide-react';
 
 const WhatsAppIcon = () => (
   <svg viewBox="0 0 24 24" className="h-5 w-5 fill-current" xmlns="http://www.w3.org/2000/svg">
@@ -8,42 +8,72 @@ const WhatsAppIcon = () => (
 
 export const Footer = () => {
   return (
-    <footer className="mt-12 border-t border-border bg-card">
-      <div className="container mx-auto px-4 py-8">
-        <div className="flex flex-col items-center gap-4">
-          <h4 className="text-lg font-bold text-foreground">UP ESFIHAS ARTESANAIS</h4>
-          <p className="text-sm text-muted-foreground">Florianópolis - Norte da Ilha</p>
-
-          {/* Social icons */}
-          <div className="flex items-center gap-4">
-            <a
-              href="https://www.instagram.com/upesfihasartesanais/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="rounded-full bg-muted p-2.5 text-muted-foreground transition-colors hover:bg-primary hover:text-primary-foreground"
-              aria-label="Instagram"
-            >
-              <Instagram className="h-5 w-5" />
-            </a>
-            <a
-              href="https://wa.me/5548991506966?text=Ol%C3%A1%2C%20eu%20gostaria%20de%20fazer%20um%20pedido"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="rounded-full bg-muted p-2.5 text-muted-foreground transition-colors hover:bg-primary hover:text-primary-foreground"
-              aria-label="WhatsApp"
-            >
-              <WhatsAppIcon />
-            </a>
+    <footer className="mt-auto bg-[hsl(0,0%,7%)] text-white">
+      <div className="container mx-auto max-w-[1200px] px-5 py-10">
+        {/* Grid Layout: 3 cols desktop, 1 col mobile */}
+        <div className="grid gap-8 md:grid-cols-3 md:gap-6">
+          {/* Column 1: Brand */}
+          <div className="flex flex-col items-center text-center md:items-start md:text-left">
+            <h4 className="mb-2 text-lg font-bold tracking-wide">UP ESFIHAS</h4>
+            <p className="mb-3 text-sm text-white/70">Artesanais</p>
+            <p className="text-xs leading-relaxed text-white/50">
+              Esfihas feitas com carinho e ingredientes selecionados. O sabor da tradição na sua casa.
+            </p>
           </div>
 
-          {/* Links */}
-          <div className="flex items-center gap-4 text-xs text-muted-foreground">
-            <a href="#" className="hover:text-foreground transition-colors">Política de Privacidade</a>
-            <span>•</span>
-            <a href="#" className="hover:text-foreground transition-colors">Termos de Uso</a>
+          {/* Column 2: Contact Info */}
+          <div className="flex flex-col items-center text-center md:items-start md:text-left">
+            <h5 className="mb-3 text-sm font-semibold uppercase tracking-wider text-white/80">Contato</h5>
+            <div className="space-y-2 text-sm text-white/60">
+              <div className="flex items-center justify-center gap-2 md:justify-start">
+                <MapPin className="h-4 w-4 shrink-0" />
+                <span>Florianópolis - Norte da Ilha</span>
+              </div>
+              <div className="flex items-center justify-center gap-2 md:justify-start">
+                <Clock className="h-4 w-4 shrink-0" />
+                <span>Ter - Dom: 18h às 23h</span>
+              </div>
+              <div className="flex items-center justify-center gap-2 md:justify-start">
+                <Phone className="h-4 w-4 shrink-0" />
+                <span>(48) 99150-6966</span>
+              </div>
+            </div>
           </div>
 
-          <p className="text-xs text-muted-foreground/60">
+          {/* Column 3: Social & Links */}
+          <div className="flex flex-col items-center text-center md:items-start md:text-left">
+            <h5 className="mb-3 text-sm font-semibold uppercase tracking-wider text-white/80">Siga-nos</h5>
+            <div className="flex items-center gap-4">
+              <a
+                href="https://www.instagram.com/upesfihasartesanais/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex h-10 w-10 items-center justify-center rounded-full border border-white/20 text-white/70 transition-all hover:border-white/40 hover:bg-white/10 hover:text-white"
+                aria-label="Instagram"
+              >
+                <Instagram className="h-5 w-5" />
+              </a>
+              <a
+                href="https://wa.me/5548991506966?text=Ol%C3%A1%2C%20eu%20gostaria%20de%20fazer%20um%20pedido"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex h-10 w-10 items-center justify-center rounded-full border border-white/20 text-white/70 transition-all hover:border-white/40 hover:bg-white/10 hover:text-white"
+                aria-label="WhatsApp"
+              >
+                <WhatsAppIcon />
+              </a>
+            </div>
+            <div className="mt-4 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-xs text-white/40 md:justify-start">
+              <a href="#" className="transition-colors hover:text-white/70">Política de Privacidade</a>
+              <span className="hidden md:inline">•</span>
+              <a href="#" className="transition-colors hover:text-white/70">Termos de Uso</a>
+            </div>
+          </div>
+        </div>
+
+        {/* Bottom Bar */}
+        <div className="mt-8 border-t border-white/10 pt-6">
+          <p className="text-center text-xs text-white/40">
             © 2025 UP Esfihas Artesanais. Todos os direitos reservados.
           </p>
         </div>
