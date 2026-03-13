@@ -240,16 +240,35 @@ const Pagamento = () => {
 
   // ---- PAYMENT HANDLERS ----
   const handleFinalizarEntrega = async () => {
-    if (!confirmedAddress || !pedidoCriado || !user) return;
+    if (!confirmedAddress || !user) return;
+    setSalvandoPedido(true);
 
-    await supabase.from('pedidos').update({ metodo_pagamento: 'entrega' }).eq('id', pedidoCriado.id);
+    try {
+      const { data: authData, error: authError } = await supabase.auth.getUser();
+      const authUserId = authData.user?.id;
+      if (authError || !authUserId) { toast.error('Sessão expirada.'); return; }
 
-    if (cupomGerado) toast.success(`🎉 Você ganhou o cupom ${cupomGerado} para seu próximo pedido!`, { duration: 10000 });
+      const recalcTaxa = freteGratis ? 0 : confirmedAddress.taxaEntrega;
+      const recalcTotal = subtotal - descontoValor + recalcTaxa;
 
-    toast.success('Pedido confirmado! Acompanhe o status na aba Pedidos.');
-    clearCart();
-    localStorage.removeItem('pedido_observacoes');
-    navigate('/pedidos');
+      if (melhorDesconto?.cupomId) await marcarCupomUsado(melhorDesconto.cupomId);
+      if (numPedidos === 0) await gerarCupomSegundoPedido();
+
+      const result = await salvarPedidoDB(confirmedAddress, recalcTaxa, recalcTotal, authUserId, 'pendente');
+      if (!result) { toast.error('Erro ao criar pedido.'); return; }
+
+      await supabase.from('pedidos').update({ metodo_pagamento: 'entrega' }).eq('id', result.id);
+
+      if (cupomGerado) toast.success(`🎉 Você ganhou o cupom ${cupomGerado} para seu próximo pedido!`, { duration: 10000 });
+
+      toast.success('Pedido confirmado! Acompanhe o status na aba Pedidos.');
+      localStorage.setItem('pedido_enviado_sucesso', 'true');
+      clearCart();
+      localStorage.removeItem('pedido_observacoes');
+      navigate('/carrinho');
+    } finally {
+      setSalvandoPedido(false);
+    }
   };
 
   const handlePagarOnline = async () => {
