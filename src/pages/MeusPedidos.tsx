@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -7,52 +7,49 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { Package, ChefHat, Truck, CheckCircle2, ShoppingBag, CreditCard } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Package, ChefHat, Truck, CheckCircle2, ShoppingBag, CreditCard, MapPin, ArrowLeft, Clock, XCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { useMutation } from '@tanstack/react-query';
 
 const STATUS_STEPS = [
-  { key: 'confirmado', label: 'Aceito', icon: Package, progress: 20 },
-  { key: 'em_preparo', label: 'Em preparo', icon: ChefHat, progress: 45 },
-  { key: 'saiu_entrega', label: 'Saiu p/ entrega', icon: Truck, progress: 75 },
-  { key: 'concluido', label: 'Entregue', icon: CheckCircle2, progress: 100 },
+  { key: 'pendente', label: 'Pedido recebido', icon: Package, progress: 10 },
+  { key: 'aceito', label: 'Pedido aceito', icon: CheckCircle2, progress: 30 },
+  { key: 'preparo', label: 'Em preparo', icon: ChefHat, progress: 55 },
+  { key: 'saiu_entrega', label: 'Saiu p/ entrega', icon: Truck, progress: 80 },
+  { key: 'finalizado', label: 'Finalizado', icon: CheckCircle2, progress: 100 },
 ];
 
-const getStatusProgress = (status: string) => {
-  if (status === 'pendente' || status === 'pago') return 5;
-  const step = STATUS_STEPS.find(s => s.key === status);
-  return step?.progress || 5;
-};
-
-const getStatusLabel = (status: string) => {
+const traduzirStatus = (status: string): string => {
   switch (status) {
     case 'pendente': return 'Pedido recebido';
-    case 'pago': return 'Pagamento confirmado';
-    case 'confirmado': return 'Pedido aceito';
-    case 'em_preparo': return 'Em preparo';
+    case 'aceito': return 'Pedido aceito';
+    case 'preparo': return 'Em preparo';
     case 'saiu_entrega': return 'Saiu para entrega';
-    case 'concluido': return 'Entregue';
+    case 'finalizado': return 'Pedido finalizado';
     case 'cancelado': return 'Cancelado';
     default: return status;
   }
 };
 
+const getStatusProgress = (status: string) => {
+  const step = STATUS_STEPS.find(s => s.key === status);
+  return step?.progress || 5;
+};
+
 const PAYMENT_LABELS: Record<string, string> = {
   'card_online': '💳 Cartão Online',
-  'online': '💳 Online',
   'pix_entrega': 'PIX na Entrega',
   'dinheiro_entrega': '💵 Dinheiro',
   'maquininha_entrega': '💳 Maquininha',
   'pendente': '⏳ Pendente',
-  'pix': 'PIX',
-  'entrega': '🚚 Na Entrega',
 };
 
 const MeusPedidos = () => {
   const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const [selectedPedido, setSelectedPedido] = useState<any>(null);
 
   const { data: pedidos = [], isLoading } = useQuery({
     queryKey: ['meus-pedidos', user?.user_id],
@@ -68,7 +65,7 @@ const MeusPedidos = () => {
     enabled: !!user?.user_id,
   });
 
-  // Realtime subscription for order status changes
+  // Realtime subscription
   useEffect(() => {
     if (!user?.user_id) return;
 
@@ -81,31 +78,24 @@ const MeusPedidos = () => {
           const updated = payload.new as any;
           if (updated.user_id === user.user_id) {
             queryClient.invalidateQueries({ queryKey: ['meus-pedidos'] });
-            const label = getStatusLabel(updated.status);
-            toast.info(`Pedido #${updated.numero}: ${label}`);
+            toast.info(`Pedido #${updated.numero}: ${traduzirStatus(updated.status)}`);
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'pedidos' },
+        (payload) => {
+          const inserted = payload.new as any;
+          if (inserted.user_id === user.user_id) {
+            queryClient.invalidateQueries({ queryKey: ['meus-pedidos'] });
           }
         }
       )
       .subscribe();
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    return () => { supabase.removeChannel(channel); };
   }, [user?.user_id, queryClient]);
-
-  const confirmarEntrega = useMutation({
-    mutationFn: async (pedidoId: string) => {
-      const { error } = await supabase
-        .from('pedidos')
-        .update({ status: 'concluido' })
-        .eq('id', pedidoId);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['meus-pedidos'] });
-      toast.success('Entrega confirmada! Obrigado!');
-    },
-  });
 
   if (!isAuthenticated) {
     return (
@@ -139,11 +129,10 @@ const MeusPedidos = () => {
           {pedidos.map((pedido: any) => {
             const progress = getStatusProgress(pedido.status);
             const isCancelled = pedido.status === 'cancelado';
-            const isDelivered = pedido.status === 'concluido';
-            const canConfirm = pedido.status === 'saiu_entrega';
+            const isFinished = pedido.status === 'finalizado';
 
             return (
-              <Card key={pedido.id} className="border">
+              <Card key={pedido.id} className="border cursor-pointer hover:shadow-md transition-shadow" onClick={() => setSelectedPedido(pedido)}>
                 <CardContent className="p-4 space-y-4">
                   {/* Header */}
                   <div className="flex items-center justify-between">
@@ -156,8 +145,8 @@ const MeusPedidos = () => {
                     </div>
                     <div className="text-right">
                       <p className="font-bold text-primary">R$ {Number(pedido.total).toFixed(2)}</p>
-                      <Badge variant={isCancelled ? 'destructive' : isDelivered ? 'default' : 'secondary'}>
-                        {getStatusLabel(pedido.status)}
+                      <Badge variant={isCancelled ? 'destructive' : isFinished ? 'default' : 'secondary'}>
+                        {traduzirStatus(pedido.status)}
                       </Badge>
                     </div>
                   </div>
@@ -187,6 +176,13 @@ const MeusPedidos = () => {
                     </div>
                   )}
 
+                  {isCancelled && (
+                    <div className="flex items-center gap-2 text-destructive">
+                      <XCircle className="h-5 w-5" />
+                      <span className="font-medium">Pedido cancelado</span>
+                    </div>
+                  )}
+
                   {/* Items summary */}
                   <div className="text-sm text-muted-foreground">
                     {Array.isArray(pedido.items) && pedido.items.map((item: any, i: number) => (
@@ -197,23 +193,121 @@ const MeusPedidos = () => {
                     ))}
                   </div>
 
-                  {/* Confirm delivery button */}
-                  {canConfirm && (
-                    <Button
-                      className="w-full"
-                      onClick={() => confirmarEntrega.mutate(pedido.id)}
-                      disabled={confirmarEntrega.isPending}
-                    >
-                      <CheckCircle2 className="h-4 w-4 mr-2" />
-                      Confirmar Entrega
-                    </Button>
-                  )}
+                  <Button variant="outline" size="sm" className="w-full">
+                    Ver detalhes
+                  </Button>
                 </CardContent>
               </Card>
             );
           })}
         </div>
       </div>
+
+      {/* Detail Modal */}
+      <Dialog open={!!selectedPedido} onOpenChange={() => setSelectedPedido(null)}>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Pedido #{selectedPedido?.numero}</DialogTitle>
+          </DialogHeader>
+          {selectedPedido && (
+            <div className="space-y-5">
+              {/* Status timeline */}
+              {selectedPedido.status !== 'cancelado' ? (
+                <div className="space-y-3">
+                  <p className="font-semibold text-sm">Acompanhamento</p>
+                  <div className="relative pl-6 space-y-4">
+                    {STATUS_STEPS.map((step, idx) => {
+                      const currentIdx = STATUS_STEPS.findIndex(s => s.key === selectedPedido.status);
+                      const isComplete = idx <= currentIdx;
+                      const isCurrent = idx === currentIdx;
+                      const StepIcon = step.icon;
+                      return (
+                        <div key={step.key} className="flex items-start gap-3 relative">
+                          <div className={`absolute -left-6 w-4 h-4 rounded-full border-2 flex items-center justify-center ${isComplete ? 'bg-primary border-primary' : 'bg-background border-muted-foreground/30'}`}>
+                            {isComplete && <CheckCircle2 className="h-3 w-3 text-primary-foreground" />}
+                          </div>
+                          {idx < STATUS_STEPS.length - 1 && (
+                            <div className={`absolute -left-[17px] top-5 w-0.5 h-6 ${isComplete ? 'bg-primary' : 'bg-muted-foreground/20'}`} />
+                          )}
+                          <div className={`flex items-center gap-2 ${isCurrent ? 'text-primary font-semibold' : isComplete ? 'text-foreground' : 'text-muted-foreground'}`}>
+                            <StepIcon className="h-4 w-4" />
+                            <span className="text-sm">{step.label}</span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 text-destructive p-3 bg-destructive/10 rounded-lg">
+                  <XCircle className="h-5 w-5" />
+                  <span className="font-semibold">Pedido cancelado</span>
+                </div>
+              )}
+
+              {/* Order info */}
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <p className="text-muted-foreground">Data</p>
+                  <p className="font-medium">
+                    {new Date(selectedPedido.created_at).toLocaleDateString('pt-BR')}{' '}
+                    {new Date(selectedPedido.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground">Pagamento</p>
+                  <p className="font-medium">
+                    {PAYMENT_LABELS[selectedPedido.metodo_pagamento] || selectedPedido.metodo_pagamento}
+                  </p>
+                </div>
+              </div>
+
+              {/* Address */}
+              {selectedPedido.endereco && (
+                <div className="rounded-lg bg-muted p-3 text-sm space-y-1">
+                  <p className="font-semibold flex items-center gap-1">
+                    <MapPin className="h-3 w-3" /> Endereço de entrega
+                  </p>
+                  <p>
+                    {(selectedPedido.endereco as any).rua}, {(selectedPedido.endereco as any).numero}
+                    {(selectedPedido.endereco as any).complemento && ` - ${(selectedPedido.endereco as any).complemento}`}
+                  </p>
+                  <p>{(selectedPedido.endereco as any).bairro}</p>
+                </div>
+              )}
+
+              {/* Items */}
+              <div className="space-y-2">
+                <p className="font-semibold text-sm">Itens do pedido</p>
+                <div className="space-y-1">
+                  {Array.isArray(selectedPedido.items) && selectedPedido.items.map((item: any, i: number) => (
+                    <div key={i} className="flex justify-between text-sm py-1 border-b last:border-0">
+                      <span>{item.quantidade}x {item.nome}</span>
+                      <span>R$ {(item.preco * item.quantidade).toFixed(2)}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Totals */}
+              <div className="space-y-1 text-sm pt-2 border-t">
+                <div className="flex justify-between">
+                  <span>Subtotal</span>
+                  <span>R$ {Number(selectedPedido.subtotal).toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Taxa de entrega</span>
+                  <span>R$ {Number(selectedPedido.taxa_entrega).toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between font-bold text-base pt-1">
+                  <span>Total</span>
+                  <span className="text-primary">R$ {Number(selectedPedido.total).toFixed(2)}</span>
+                </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

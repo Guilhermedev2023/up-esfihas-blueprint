@@ -51,10 +51,10 @@ serve(async (req) => {
     if (pedidoId) {
       await supabase
         .from("pedidos")
-        .update({ status: "pago" })
+        .update({ status: "pendente", metodo_pagamento: "card_online" })
         .eq("id", pedidoId);
 
-      console.log(`Pedido ${pedidoId} marcado como pago`);
+      console.log(`Pedido ${pedidoId} pagamento confirmado`);
     }
   }
 
@@ -65,7 +65,7 @@ serve(async (req) => {
     if (pedidoId) {
       await supabase
         .from("pedidos")
-        .update({ status: "pagamento_falhou" })
+        .update({ status: "cancelado" })
         .eq("id", pedidoId);
 
       console.log(`Pagamento falhou para pedido ${pedidoId}`);
