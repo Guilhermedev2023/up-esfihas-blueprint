@@ -19,10 +19,15 @@ export const Header = () => {
     <header className="sticky top-0 z-50 w-full bg-card border-b border-border shadow-sm">
       <div className="container mx-auto flex h-14 items-center justify-between px-4">
         <Link to="/home" className="flex items-center gap-2">
-          <span className="text-lg font-bold text-foreground">UP ESFIHAS ARTESANAIS</span>
+          <img src="/images/logo.jpg" alt="UP Esfihas" className="h-8 w-8 rounded-full object-cover" />
         </Link>
 
         <div className="flex items-center gap-3">
+          <Link to="/pedidos">
+            <Button variant="ghost" size="icon" className="text-foreground hover:bg-muted">
+              <Package className="h-5 w-5" />
+            </Button>
+          </Link>
           <Link to="/carrinho">
             <Button variant="ghost" size="icon" className="relative text-foreground hover:bg-muted">
               <ShoppingCart className="h-5 w-5" />
