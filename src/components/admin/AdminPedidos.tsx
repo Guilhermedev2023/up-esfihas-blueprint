@@ -61,12 +61,38 @@ const AdminPedidos = () => {
   const initialLoadDone = useRef(false);
   const { data: isStoreOpen = true } = useStoreOpen();
 
+  // Fetch store hours to determine current cycle start
+  const { data: horario } = useQuery({
+    queryKey: ['admin-horario-kanban'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('horario_funcionamento')
+        .select('hora_abertura')
+        .eq('ativo', true)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const cycleStart = useMemo(() => {
+    const now = new Date();
+    const [oh, om] = (horario?.hora_abertura || '00:00').split(':').map(Number);
+    const openToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), oh, om);
+    // If current time is before today's opening, use yesterday's opening
+    if (now < openToday) {
+      openToday.setDate(openToday.getDate() - 1);
+    }
+    return openToday.toISOString();
+  }, [horario]);
+
   const { data: pedidos = [] } = useQuery({
-    queryKey: ['admin-pedidos'],
+    queryKey: ['admin-pedidos', cycleStart],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('pedidos')
         .select('*')
+        .gte('created_at', cycleStart)
         .order('created_at', { ascending: false });
       if (error) throw error;
       return data as Pedido[];
