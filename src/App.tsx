@@ -10,15 +10,14 @@ import Cadastro from "./pages/Cadastro";
 import Home from "./pages/Home";
 import Produto from "./pages/Produto";
 import Carrinho from "./pages/Carrinho";
-import Endereco from "./pages/Endereco";
 import Pagamento from "./pages/Pagamento";
-import Confirmacao from "./pages/Confirmacao";
+import Pedidos from "./pages/Pedidos";
 import Perfil from "./pages/Perfil";
 import NotFound from "./pages/NotFound";
 import AdminLogin from "./pages/AdminLogin";
 import Admin from "./pages/Admin";
 import AdminRoute from "./components/AdminRoute";
-import MeusPedidos from "./pages/MeusPedidos";
+
 
 const queryClient = new QueryClient();
 
@@ -37,11 +36,12 @@ const App = () => (
               <Route path="/home" element={<Home />} />
               <Route path="/produto/:id" element={<Produto />} />
               <Route path="/carrinho" element={<Carrinho />} />
-              <Route path="/endereco" element={<Endereco />} />
               <Route path="/pagamento" element={<Pagamento />} />
-              <Route path="/confirmacao" element={<Confirmacao />} />
+              <Route path="/pedidos" element={<Pedidos />} />
               <Route path="/perfil" element={<Perfil />} />
-              <Route path="/meus-pedidos" element={<MeusPedidos />} />
+              <Route path="/meus-pedidos" element={<Navigate to="/pedidos" replace />} />
+              <Route path="/confirmacao" element={<Navigate to="/pedidos" replace />} />
+              <Route path="/endereco" element={<Navigate to="/pagamento" replace />} />
               <Route path="/admin/login" element={<AdminLogin />} />
               <Route path="/admin" element={<AdminRoute><Admin /></AdminRoute>} />
               <Route path="*" element={<NotFound />} />

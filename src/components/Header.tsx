@@ -45,8 +45,11 @@ export const Header = () => {
                 <DropdownMenuItem className="font-semibold">
                   {user?.nome}
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => navigate('/perfil')}>
+              <DropdownMenuItem onClick={() => navigate('/perfil')}>
                   Meu Perfil
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate('/pedidos')}>
+                  Pedidos
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={logout}>
                   Sair
