@@ -12,7 +12,7 @@ export const Footer = () => {
       <div className="container mx-auto px-4 py-8">
         <div className="flex flex-col items-center gap-4">
           <h4 className="text-lg font-bold text-foreground">UP ESFIHAS ARTESANAIS</h4>
-          <p className="text-sm text-muted-foreground">Florianópolis — Cachoeira do Bom Jesus</p>
+          <p className="text-sm text-muted-foreground">Florianópolis - Norte da Ilha</p>
 
           {/* Social icons */}
           <div className="flex items-center gap-4">
