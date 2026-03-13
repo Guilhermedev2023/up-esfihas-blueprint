@@ -5,7 +5,7 @@ import { useCart } from '@/contexts/CartContext';
 import { useAuth } from '@/contexts/AuthContext';
 
 import { useNavigate } from 'react-router-dom';
-import { Plus, Minus, Trash2, ShoppingBag, AlertCircle } from 'lucide-react';
+import { Plus, Minus, Trash2, ShoppingBag, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
@@ -22,6 +22,16 @@ const Carrinho = () => {
   const { data: isOpen = true } = useStoreOpen();
   const [observacoes, setObservacoes] = useState('');
 
+  // Check if user just completed an order
+  const [pedidoEnviado, setPedidoEnviado] = useState(false);
+  useEffect(() => {
+    const flag = localStorage.getItem('pedido_enviado_sucesso');
+    if (flag === 'true') {
+      setPedidoEnviado(true);
+      localStorage.removeItem('pedido_enviado_sucesso');
+    }
+  }, []);
+
   // Save observacoes to localStorage for use in payment page
   useEffect(() => {
     localStorage.setItem('pedido_observacoes', observacoes);
@@ -34,14 +44,27 @@ const Carrinho = () => {
         <div className="container mx-auto px-4 py-12">
           <Card className="mx-auto max-w-md text-center">
             <CardContent className="py-12">
-              <ShoppingBag className="mx-auto mb-4 h-16 w-16 text-muted-foreground" />
-              <h2 className="mb-2 text-2xl font-bold text-foreground">Seu carrinho está vazio</h2>
-              <p className="mb-6 text-muted-foreground">
-                Adicione esfihas deliciosas ao seu pedido
-              </p>
-              <Button onClick={() => navigate('/home')} size="lg">
-                Ver Cardápio
-              </Button>
+              {pedidoEnviado ? (
+                <>
+                  <CheckCircle2 className="mx-auto mb-4 h-16 w-16 text-green-500" />
+                  <h2 className="mb-2 text-2xl font-bold text-foreground">Pedido Enviado com Sucesso</h2>
+                  <p className="mb-6 text-muted-foreground">Acompanhe seu pedido</p>
+                  <Button onClick={() => navigate('/pedidos')} size="lg">
+                    Ver pedido
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <ShoppingBag className="mx-auto mb-4 h-16 w-16 text-muted-foreground" />
+                  <h2 className="mb-2 text-2xl font-bold text-foreground">Seu carrinho está vazio</h2>
+                  <p className="mb-6 text-muted-foreground">
+                    Adicione esfihas deliciosas ao seu pedido
+                  </p>
+                  <Button onClick={() => navigate('/home')} size="lg">
+                    Ver Cardápio
+                  </Button>
+                </>
+              )}
             </CardContent>
           </Card>
         </div>
