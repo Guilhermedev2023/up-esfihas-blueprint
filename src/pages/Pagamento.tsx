@@ -12,8 +12,7 @@ import { useCart } from '@/contexts/CartContext';
 import { useAuth } from '@/contexts/AuthContext';
 import {
   Truck, CheckCircle2, MapPin, Tag, Gift, CreditCard,
-  Loader2, Home, AlertCircle, Clock, Ruler, ArrowLeft, ChevronRight,
-  Banknote, Smartphone
+  Loader2, Home, AlertCircle, Clock, Ruler, ArrowLeft, ChevronRight
 } from 'lucide-react';
 import { generateWhatsAppMessage, sendToWhatsApp } from '@/utils/whatsappMessage';
 import { toast } from 'sonner';
