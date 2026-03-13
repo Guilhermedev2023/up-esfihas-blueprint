@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import { ChevronRight, Clock, MapPin, Phone, CreditCard, Eye, Volume2, VolumeX } from 'lucide-react';
-import { useStoreOpen } from '@/hooks/useStoreOpen';
+
 
 interface Pedido {
   id: string;
@@ -25,10 +25,10 @@ interface Pedido {
 }
 
 const STATUS_COLUMNS = [
-  { key: 'pendente', label: 'Aceitar Pedido', color: 'bg-orange-500', next: 'aceito' },
-  { key: 'aceito', label: 'Em Preparo', color: 'bg-blue-400', next: 'preparo' },
-  { key: 'preparo', label: 'Saiu p/ Entrega', color: 'bg-blue-500', next: 'saiu_entrega' },
-  { key: 'saiu_entrega', label: 'Finalizado', color: 'bg-purple-500', next: 'finalizado' },
+  { key: 'pendente', label: 'Aceitar Pedido', color: 'bg-orange-500', next: 'preparo', buttonLabel: 'Aceitar Pedido' },
+  { key: 'preparo', label: 'Em Preparo', color: 'bg-blue-500', next: 'saiu_entrega', buttonLabel: 'Despachar Pedido' },
+  { key: 'saiu_entrega', label: 'Saiu p/ Entrega', color: 'bg-purple-500', next: 'finalizado', buttonLabel: 'Finalizar' },
+  { key: 'finalizado', label: 'Finalizado', color: 'bg-green-600', next: null, buttonLabel: '' },
 ];
 
 const PAYMENT_LABELS: Record<string, string> = {
@@ -41,7 +41,7 @@ const PAYMENT_LABELS: Record<string, string> = {
 
 export const traduzirStatus = (status: string): string => {
   switch (status) {
-    case 'pendente': return 'Pedido recebido';
+    case 'pendente': return 'Aguardando aceitação';
     case 'aceito': return 'Pedido aceito';
     case 'preparo': return 'Em preparo';
     case 'saiu_entrega': return 'Saiu para entrega';
@@ -59,14 +59,40 @@ const AdminPedidos = () => {
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const knownIdsRef = useRef<Set<string>>(new Set());
   const initialLoadDone = useRef(false);
-  const { data: isStoreOpen = true } = useStoreOpen();
+
+
+  // Fetch store hours to determine current cycle start
+  const { data: horario } = useQuery({
+    queryKey: ['admin-horario-kanban'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('horario_funcionamento')
+        .select('hora_abertura')
+        .eq('ativo', true)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const cycleStart = useMemo(() => {
+    const now = new Date();
+    const [oh, om] = (horario?.hora_abertura || '00:00').split(':').map(Number);
+    const openToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), oh, om);
+    // If current time is before today's opening, use yesterday's opening
+    if (now < openToday) {
+      openToday.setDate(openToday.getDate() - 1);
+    }
+    return openToday.toISOString();
+  }, [horario]);
 
   const { data: pedidos = [] } = useQuery({
-    queryKey: ['admin-pedidos'],
+    queryKey: ['admin-pedidos', cycleStart],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('pedidos')
         .select('*')
+        .gte('created_at', cycleStart)
         .order('created_at', { ascending: false });
       if (error) throw error;
       return data as Pedido[];
@@ -157,21 +183,12 @@ const AdminPedidos = () => {
     updateStatus.mutate({ id: pedido.id, newStatus: nextStatus });
   };
 
-  const getButtonLabel = (status: string) => {
-    switch (status) {
-      case 'pendente': return 'Aceitar Pedido';
-      case 'aceito': return 'Despachar Pedido';
-      case 'preparo': return 'Despachar Pedido';
-      case 'saiu_entrega': return 'Finalizar';
-      default: return '';
-    }
-  };
-
   const formatTime = (date: string) =>
     new Date(date).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
 
   const formatDate = (date: string) =>
     new Date(date).toLocaleDateString('pt-BR');
+
 
   return (
     <div className="space-y-4">
@@ -194,12 +211,7 @@ const AdminPedidos = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {STATUS_COLUMNS.map((col) => {
-          // Hide finalized orders when store is closed
-          const colPedidos = pedidos.filter(p => {
-            if (p.status !== col.key) return false;
-            if (col.key === 'finalizado' && !isStoreOpen) return false;
-            return true;
-          });
+          const colPedidos = pedidos.filter(p => p.status === col.key);
           return (
             <div key={col.key} className="space-y-3">
               <div className="flex items-center gap-2">
@@ -240,7 +252,7 @@ const AdminPedidos = () => {
                         </Button>
                         {col.next && (
                           <Button size="sm" className="flex-1 h-7 text-xs" onClick={() => handleAdvanceStatus(pedido, col.next!)}>
-                            {getButtonLabel(pedido.status)}
+                            {col.buttonLabel}
                             <ChevronRight className="h-3 w-3 ml-1" />
                           </Button>
                         )}
