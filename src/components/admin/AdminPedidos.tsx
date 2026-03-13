@@ -200,6 +200,7 @@ const AdminPedidos = () => {
             if (col.key === 'finalizado' && !isStoreOpen) return false;
             return true;
           });
+          return (
             <div key={col.key} className="space-y-3">
               <div className="flex items-center gap-2">
                 <div className={`w-3 h-3 rounded-full ${col.color}`} />
