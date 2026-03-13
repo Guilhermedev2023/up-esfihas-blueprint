@@ -503,6 +503,7 @@ export type Database = {
         Args: { target_user_email: string }
         Returns: undefined
       }
+      usar_cupom: { Args: { _cupom_id: string }; Returns: boolean }
     }
     Enums: {
       app_role: "admin" | "user"
