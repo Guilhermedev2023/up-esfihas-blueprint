@@ -32,6 +32,7 @@ interface Pedido {
   status: string | null;
   created_at: string | null;
   telefone: string;
+  user_id: string | null;
 }
 
 const STATUS_VALIDOS = ['aceito', 'preparo', 'saiu_entrega', 'finalizado'];
