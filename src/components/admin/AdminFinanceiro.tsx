@@ -178,7 +178,7 @@ function getHeatmapData(pedidos: Pedido[]) {
 }
 
 function getRecurringCustomers(pedidos: Pedido[], limit = 20) {
-  const map = new Map<string, { telefone: string; pedidos: number; total: number; ultimo: string }>();
+  const map = new Map<string, { telefone: string; pedidos: number; total: number; ultimo: string; user_id: string | null }>();
   for (const p of filterValid(pedidos)) {
     const tel = p.telefone || '';
     if (!tel) continue;
@@ -187,8 +187,9 @@ function getRecurringCustomers(pedidos: Pedido[], limit = 20) {
       ex.pedidos += 1;
       ex.total += Number(p.total);
       if (p.created_at && p.created_at > ex.ultimo) ex.ultimo = p.created_at;
+      if (!ex.user_id && (p as any).user_id) ex.user_id = (p as any).user_id;
     } else {
-      map.set(tel, { telefone: tel, pedidos: 1, total: Number(p.total), ultimo: p.created_at || '' });
+      map.set(tel, { telefone: tel, pedidos: 1, total: Number(p.total), ultimo: p.created_at || '', user_id: (p as any).user_id || null });
     }
   }
   return Array.from(map.values()).sort((a, b) => b.total - a.total).slice(0, limit);

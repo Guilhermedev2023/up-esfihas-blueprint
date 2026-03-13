@@ -32,6 +32,7 @@ const traduzirStatus = (status: string): string => {
 };
 
 const getStatusProgress = (status: string) => {
+  if (status === 'pendente') return 10;
   const step = STATUS_STEPS.find(s => s.key === status);
   return step?.progress || 5;
 };

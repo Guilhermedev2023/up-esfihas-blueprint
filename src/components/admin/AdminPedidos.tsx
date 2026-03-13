@@ -158,8 +158,8 @@ const AdminPedidos = () => {
   const getButtonLabel = (status: string) => {
     switch (status) {
       case 'pendente': return 'Aceitar Pedido';
-      case 'aceito': return 'Iniciar Preparo';
-      case 'preparo': return 'Saiu p/ Entrega';
+      case 'aceito': return 'Despachar Pedido';
+      case 'preparo': return 'Despachar Pedido';
       case 'saiu_entrega': return 'Finalizar';
       default: return '';
     }
