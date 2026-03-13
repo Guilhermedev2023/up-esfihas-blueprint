@@ -34,17 +34,17 @@ interface Pedido {
   telefone: string;
 }
 
-const STATUS_VALIDOS = ['confirmado', 'concluido', 'entregue', 'em_preparo', 'aguardando_confirmacao'];
+const STATUS_VALIDOS = ['aceito', 'preparo', 'saiu_entrega', 'finalizado'];
 const filterValid = (pedidos: Pedido[]) => pedidos.filter(p => p.status !== 'cancelado');
 
-const METODO_LABELS: Record<string, string> = { pix: 'PIX', entrega: 'Na Entrega', cartao: 'Cartão', dinheiro: 'Dinheiro' };
+const METODO_LABELS: Record<string, string> = { card_online: '💳 Cartão Online', pix_entrega: 'PIX', dinheiro_entrega: 'Dinheiro', maquininha_entrega: 'Maquininha', pendente: 'Pendente' };
 const STATUS_LABELS: Record<string, string> = {
-  aguardando_confirmacao: 'Aguardando', pendente: 'Pendente', confirmado: 'Confirmado',
-  em_preparo: 'Em Preparo', entregue: 'Entregue', concluido: 'Concluído', cancelado: 'Cancelado',
+  pendente: 'Pendente', aceito: 'Aceito', preparo: 'Em Preparo',
+  saiu_entrega: 'Saiu p/ Entrega', finalizado: 'Finalizado', cancelado: 'Cancelado',
 };
 const STATUS_COLORS: Record<string, 'default' | 'destructive' | 'outline' | 'secondary'> = {
-  aguardando_confirmacao: 'outline', pendente: 'outline', confirmado: 'secondary',
-  em_preparo: 'secondary', entregue: 'default', concluido: 'default', cancelado: 'destructive',
+  pendente: 'outline', aceito: 'secondary', preparo: 'secondary',
+  saiu_entrega: 'default', finalizado: 'default', cancelado: 'destructive',
 };
 const DIAS_SEMANA = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
 const DIAS_SEMANA_CURTO = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
