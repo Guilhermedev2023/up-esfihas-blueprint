@@ -537,7 +537,7 @@ const Pagamento = () => {
                       {confirmedAddress.complemento && `, ${confirmedAddress.complemento}`} — {confirmedAddress.bairro}
                     </p>
                     <p className="text-sm text-muted-foreground mt-1">
-                      📦 Pedido #{pedidoCriado.numero} • {confirmedAddress.distanciaKm?.toFixed(1)} km • ~{confirmedAddress.tempoEstimado} min
+                      {confirmedAddress.distanciaKm?.toFixed(1)} km • ~{confirmedAddress.tempoEstimado} min
                     </p>
                   </CardContent>
                 </Card>
