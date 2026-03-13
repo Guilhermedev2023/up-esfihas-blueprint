@@ -239,6 +239,27 @@ export default function AdminFinanceiro() {
   const topByRevenue = useMemo(() => getTopProducts(pedidos, 10, 'faturamento'), [pedidos]);
   const recurringCustomers = useMemo(() => getRecurringCustomers(pedidos), [pedidos]);
 
+  // Fetch profiles for customer names
+  const customerUserIds = useMemo(() => recurringCustomers.map(c => c.user_id).filter(Boolean) as string[], [recurringCustomers]);
+  const { data: profiles = [] } = useQuery({
+    queryKey: ['profiles-for-customers', customerUserIds],
+    queryFn: async () => {
+      if (customerUserIds.length === 0) return [];
+      const { data, error } = await supabase.from('profiles').select('user_id, nome, telefone');
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: customerUserIds.length > 0,
+  });
+  const profileMap = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const p of profiles) {
+      if (p.telefone) map.set(p.telefone, p.nome);
+      if (p.user_id) map.set(p.user_id, p.nome);
+    }
+    return map;
+  }, [profiles]);
+
   // Monthly comparison for chart
   const monthlyChartData = useMemo(() => {
     const now = new Date();
