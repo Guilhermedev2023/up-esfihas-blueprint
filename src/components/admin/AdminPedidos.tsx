@@ -59,6 +59,7 @@ const AdminPedidos = () => {
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const knownIdsRef = useRef<Set<string>>(new Set());
   const initialLoadDone = useRef(false);
+  const { data: isStoreOpen = true } = useStoreOpen();
 
   const { data: pedidos = [] } = useQuery({
     queryKey: ['admin-pedidos'],
