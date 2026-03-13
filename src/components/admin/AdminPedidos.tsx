@@ -264,7 +264,7 @@ const AdminPedidos = () => {
                         </Button>
                         {col.next && (
                           <Button size="sm" className="flex-1 h-7 text-xs" onClick={() => handleAdvanceStatus(pedido, col.next!)}>
-                            {getButtonLabel(pedido.status)}
+                            {col.buttonLabel}
                             <ChevronRight className="h-3 w-3 ml-1" />
                           </Button>
                         )}
