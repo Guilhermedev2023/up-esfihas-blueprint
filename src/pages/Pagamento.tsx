@@ -99,6 +99,13 @@ const Pagamento = () => {
     loadKey();
   }, []);
 
+  // Auto-trigger Stripe payment intent when card_online is selected
+  useEffect(() => {
+    if (metodoPagamento === 'card_online' && !clientSecret && !creatingIntent && confirmedAddress && user) {
+      handlePagarOnline();
+    }
+  }, [metodoPagamento]);
+
   // Redirect if no items or not logged in
   useEffect(() => {
     if (items.length === 0) navigate('/carrinho');
