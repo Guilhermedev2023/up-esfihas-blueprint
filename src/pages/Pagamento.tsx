@@ -272,21 +272,38 @@ const Pagamento = () => {
   };
 
   const handlePagarOnline = async () => {
-    if (!pedidoCriado) return;
+    if (!confirmedAddress || !user) return;
+    setSalvandoPedido(true);
     setCreatingIntent(true);
 
-    await supabase.from('pedidos').update({ metodo_pagamento: 'card_online' }).eq('id', pedidoCriado.id);
-
     try {
+      const { data: authData, error: authError } = await supabase.auth.getUser();
+      const authUserId = authData.user?.id;
+      if (authError || !authUserId) { toast.error('Sessão expirada.'); return; }
+
+      const recalcTaxa = freteGratis ? 0 : confirmedAddress.taxaEntrega;
+      const recalcTotal = subtotal - descontoValor + recalcTaxa;
+
+      if (melhorDesconto?.cupomId) await marcarCupomUsado(melhorDesconto.cupomId);
+      if (numPedidos === 0) await gerarCupomSegundoPedido();
+
+      const result = await salvarPedidoDB(confirmedAddress, recalcTaxa, recalcTotal, authUserId, 'pendente');
+      if (!result) { toast.error('Erro ao criar pedido.'); return; }
+
+      await supabase.from('pedidos').update({ metodo_pagamento: 'card_online' }).eq('id', result.id);
+      setPedidoCriado(result);
+
       const { data, error } = await supabase.functions.invoke('create-payment-intent', {
-        body: { pedido_id: pedidoCriado.id, amount: Math.round(totalFinal * 100) },
+        body: { pedido_id: result.id, amount: Math.round(recalcTotal * 100) },
       });
       if (error) throw error;
       setClientSecret(data.clientSecret);
     } catch (err: any) {
       toast.error('Erro ao iniciar pagamento: ' + (err.message || 'tente novamente'));
+    } finally {
+      setSalvandoPedido(false);
+      setCreatingIntent(false);
     }
-    setCreatingIntent(false);
   };
 
   const handleStripeSuccess = () => {
