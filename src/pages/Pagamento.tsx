@@ -555,17 +555,7 @@ const Pagamento = () => {
                     <CardTitle className="text-2xl">Forma de Pagamento</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <RadioGroup value={metodoPagamento} onValueChange={(v) => {
-                      const method = v as PaymentMethod;
-                      setMetodoPagamento(method);
-                      setClientSecret(null);
-                      if (method === 'card_online' && !clientSecret && !creatingIntent) {
-                        // Auto-trigger payment intent creation
-                        setTimeout(() => {
-                          document.getElementById('auto-pay-trigger')?.click();
-                        }, 0);
-                      }
-                    }}>
+                    <RadioGroup value={metodoPagamento} onValueChange={(v) => { setMetodoPagamento(v as PaymentMethod); setClientSecret(null); }}>
                       {/* Online Card */}
                       <Card className="mb-4 cursor-pointer transition-all hover:border-primary hover:shadow-md">
                         <CardContent className="flex items-center gap-4 p-4">
