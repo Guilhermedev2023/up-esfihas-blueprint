@@ -219,10 +219,9 @@ const Pagamento = () => {
     await supabase.rpc('usar_cupom', { _cupom_id: cupomId });
   };
 
-  // Called when user clicks "Usar esse endereço"
+  // Called when user clicks "Usar esse endereço" - only confirms address, no order creation
   const handleConfirmAddress = async (address: ConfirmedAddress) => {
     if (!isOpen) { toast.error('😔 O delivery está fechado no momento.'); return; }
-    if (salvandoPedido) return;
 
     if (!address.rua?.trim() || !address.numero?.trim() || !address.bairro?.trim()) {
       toast.error('Preencha o endereço completo antes de continuar.');
@@ -234,43 +233,9 @@ const Pagamento = () => {
       return;
     }
 
-    const recalcTaxa = freteGratis ? 0 : address.taxaEntrega;
-    const recalcTotal = subtotal - descontoValor + recalcTaxa;
-
-    if (![recalcTaxa, subtotal, recalcTotal].every((value) => Number.isFinite(value))) {
-      toast.error('Valores do pedido inválidos. Recalcule o frete e tente novamente.');
-      return;
-    }
-
-    const { data: authData, error: authError } = await supabase.auth.getUser();
-    const authUserId = authData.user?.id;
-
-    if (authError || !authUserId) {
-      toast.error('Sessão expirada. Faça login novamente.');
-      return;
-    }
-
-    setSalvandoPedido(true);
-
-    try {
-      setConfirmedAddress(address);
-      setDeliveryFee(address.taxaEntrega);
-
-      if (melhorDesconto?.cupomId) await marcarCupomUsado(melhorDesconto.cupomId);
-      if (numPedidos === 0) await gerarCupomSegundoPedido();
-
-      const result = await salvarPedidoDB(address, recalcTaxa, recalcTotal, authUserId, 'pendente');
-      if (!result) {
-        toast.error('Erro ao criar pedido. Tente novamente.');
-        return;
-      }
-
-      setPedidoCriado(result);
-      setStep('payment');
-      toast.success(`Pedido #${result.numero} criado! Escolha a forma de pagamento.`);
-    } finally {
-      setSalvandoPedido(false);
-    }
+    setConfirmedAddress(address);
+    setDeliveryFee(address.taxaEntrega);
+    setStep('payment');
   };
 
   // ---- PAYMENT HANDLERS ----
