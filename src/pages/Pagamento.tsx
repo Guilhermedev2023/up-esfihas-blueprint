@@ -642,8 +642,8 @@ const Pagamento = () => {
                   </Card>
                 )}
 
-                {/* Entrega payments (PIX, Dinheiro, Maquininha) */}
-                {(metodoPagamento === 'pix_entrega' || metodoPagamento === 'dinheiro_entrega' || metodoPagamento === 'maquininha_entrega') && (
+                {/* Entrega payment */}
+                {metodoPagamento === 'entrega' && (
                   <Card className="border-2 border-primary/20 bg-gradient-to-br from-background to-accent/5">
                     <CardHeader>
                       <CardTitle className="flex items-center gap-2 text-xl">
@@ -653,24 +653,37 @@ const Pagamento = () => {
                     </CardHeader>
                     <CardContent className="space-y-6">
                       <div className="rounded-lg bg-accent/10 p-6 space-y-4">
-                        {metodoPagamento === 'pix_entrega' && (
-                          <p className="text-base">
-                            📱 Você pagará via <strong>PIX</strong> quando o motoboy chegar. Tenha o app do banco pronto!
-                          </p>
-                        )}
-                        {metodoPagamento === 'dinheiro_entrega' && (
-                          <p className="text-base">
-                            💵 Você pagará em <strong>dinheiro</strong> na entrega. Valor total: <strong>R$ {totalFinal.toFixed(2)}</strong>
-                          </p>
-                        )}
-                        {metodoPagamento === 'maquininha_entrega' && (
-                          <p className="text-base">
-                            💳 O motoboy levará a <strong>maquininha</strong>. Você pode pagar em cartão de crédito ou débito.
-                          </p>
-                        )}
+                        <p className="text-base">
+                          Você pagará na entrega via <strong>PIX, dinheiro ou maquininha</strong>.
+                        </p>
+                        <p className="text-sm text-muted-foreground">Valor total: <strong>R$ {totalFinal.toFixed(2)}</strong></p>
+
+                        <div className="space-y-2 text-sm">
+                          <p className="font-semibold">Resumo:</p>
+                          {items.map(item => (
+                            <div key={item.id} className="flex justify-between">
+                              <span>{item.quantidade}x {item.nome}</span>
+                              <span>R$ {(item.preco * item.quantidade).toFixed(2)}</span>
+                            </div>
+                          ))}
+                          <div className="border-t pt-2 space-y-1">
+                            <div className="flex justify-between">
+                              <span>Subtotal</span>
+                              <span>R$ {subtotal.toFixed(2)}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span>Taxa de entrega</span>
+                              <span>R$ {taxaEntregaFinal.toFixed(2)}</span>
+                            </div>
+                            <div className="flex justify-between font-bold text-base pt-1">
+                              <span>Total</span>
+                              <span className="text-primary">R$ {totalFinal.toFixed(2)}</span>
+                            </div>
+                          </div>
+                        </div>
                       </div>
-                      <Button onClick={() => handleFinalizarWhatsApp(metodoPagamento)} className="w-full" size="lg">
-                        📲 Finalizar Pedido pelo WhatsApp
+                      <Button onClick={() => handleFinalizarEntrega()} className="w-full" size="lg">
+                        ✅ Confirmar Pedido
                       </Button>
                     </CardContent>
                   </Card>
