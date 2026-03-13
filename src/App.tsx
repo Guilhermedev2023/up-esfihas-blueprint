@@ -17,7 +17,7 @@ import NotFound from "./pages/NotFound";
 import AdminLogin from "./pages/AdminLogin";
 import Admin from "./pages/Admin";
 import AdminRoute from "./components/AdminRoute";
-import MeusPedidos from "./pages/MeusPedidos";
+
 
 const queryClient = new QueryClient();
 
