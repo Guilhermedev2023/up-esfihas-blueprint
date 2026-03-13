@@ -498,6 +498,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      proximo_numero_pedido: { Args: never; Returns: number }
       revoke_admin_role: {
         Args: { target_user_email: string }
         Returns: undefined
