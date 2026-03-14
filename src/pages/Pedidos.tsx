@@ -46,7 +46,7 @@ const PAYMENT_LABELS: Record<string, string> = {
   'pendente': '⏳ Pendente',
 };
 
-const WHATSAPP_NUMBER = '5548915069666';
+const WHATSAPP_NUMBER = '5548991506966';
 
 const Pedidos = () => {
   const { user, isAuthenticated } = useAuth();
