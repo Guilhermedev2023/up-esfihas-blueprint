@@ -559,6 +559,7 @@ const Pagamento = () => {
                   <CardContent>
                     <RadioGroup value={metodoPagamento} onValueChange={(v) => { setMetodoPagamento(v as PaymentMethod); setClientSecret(null); }}>
                       {/* Online Card */}
+                      {isMetodoAtivo('pagamento_online') && (
                       <Card className="mb-4 cursor-pointer transition-all hover:border-primary hover:shadow-md">
                         <CardContent className="flex items-center gap-4 p-4">
                           <RadioGroupItem value="card_online" id="card_online" />
@@ -571,8 +572,10 @@ const Pagamento = () => {
                           </Label>
                         </CardContent>
                       </Card>
+                      )}
 
                       {/* Na Entrega */}
+                      {isMetodoAtivo('na_entrega') && (
                       <Card className="cursor-pointer transition-all hover:border-primary hover:shadow-md">
                         <CardContent className="flex items-center gap-4 p-4">
                           <RadioGroupItem value="entrega" id="entrega" />
@@ -585,6 +588,7 @@ const Pagamento = () => {
                           </Label>
                         </CardContent>
                       </Card>
+                      )}
                     </RadioGroup>
                   </CardContent>
                 </Card>
