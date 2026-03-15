@@ -45,6 +45,7 @@ const Pagamento = () => {
   const { user, session } = useAuth();
   const subtotal = items.reduce((sum, item) => sum + item.preco * item.quantidade, 0);
   const { data: isOpen = true } = useStoreOpen();
+  const { isMetodoAtivo } = useConfiguracaoPagamento();
 
   // Step management
   const [step, setStep] = useState<CheckoutStep>('address');
