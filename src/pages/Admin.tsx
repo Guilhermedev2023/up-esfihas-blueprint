@@ -113,6 +113,10 @@ const Admin = () => {
           <TabsContent value="financeiro">
             <AdminFinanceiro />
           </TabsContent>
+
+          <TabsContent value="pagamentos">
+            <AdminPagamentos />
+          </TabsContent>
         </Tabs>
       </main>
     </div>
