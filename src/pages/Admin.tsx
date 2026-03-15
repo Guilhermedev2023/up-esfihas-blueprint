@@ -4,7 +4,7 @@ import { useAdmin } from '@/hooks/useAdmin';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import { LogOut, Package, MapPin, Settings, Clock, Image, Gift, DollarSign, ClipboardList } from 'lucide-react';
+import { LogOut, Package, MapPin, Settings, Clock, Image, Gift, DollarSign, ClipboardList, Wallet } from 'lucide-react';
 import AdminProdutos from '@/components/admin/AdminProdutos';
 import AdminEntregas from '@/components/admin/AdminEntregas';
 import AdminHorario from '@/components/admin/AdminHorario';
@@ -12,6 +12,7 @@ import AdminBanner from '@/components/admin/AdminBanner';
 import AdminPromocoes from '@/components/admin/AdminPromocoes';
 import AdminFinanceiro from '@/components/admin/AdminFinanceiro';
 import AdminPedidos from '@/components/admin/AdminPedidos';
+import AdminPagamentos from '@/components/admin/AdminPagamentos';
 
 const Admin = () => {
   const { user, signOut } = useAdmin();
@@ -50,7 +51,7 @@ const Admin = () => {
 
       <main className="container mx-auto px-4 py-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full max-w-5xl grid-cols-7">
+          <TabsList className="grid w-full max-w-5xl grid-cols-8">
             <TabsTrigger value="pedidos" className="flex items-center gap-2">
               <ClipboardList className="h-4 w-4" />
               <span className="hidden sm:inline">Pedidos</span>
@@ -78,6 +79,10 @@ const Admin = () => {
             <TabsTrigger value="financeiro" className="flex items-center gap-2">
               <DollarSign className="h-4 w-4" />
               <span className="hidden sm:inline">Financeiro</span>
+            </TabsTrigger>
+            <TabsTrigger value="pagamentos" className="flex items-center gap-2">
+              <Wallet className="h-4 w-4" />
+              <span className="hidden sm:inline">Pagamentos</span>
             </TabsTrigger>
           </TabsList>
 
@@ -107,6 +112,10 @@ const Admin = () => {
 
           <TabsContent value="financeiro">
             <AdminFinanceiro />
+          </TabsContent>
+
+          <TabsContent value="pagamentos">
+            <AdminPagamentos />
           </TabsContent>
         </Tabs>
       </main>
