@@ -22,6 +22,7 @@ import { usePromocoes, useCuponsUsuario, useContarPedidosTelefone, calcularDesco
 import { supabase } from '@/integrations/supabase/client';
 import { calculateDeliveryFee, DeliveryCalculation } from '@/hooks/useDeliveryConfig';
 import StripeCheckoutForm from '@/components/StripeCheckoutForm';
+import { useConfiguracaoPagamento } from '@/hooks/useConfiguracaoPagamento';
 
 type CheckoutStep = 'address' | 'payment';
 
