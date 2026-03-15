@@ -4,7 +4,7 @@ import { useAdmin } from '@/hooks/useAdmin';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import { LogOut, Package, MapPin, Settings, Clock, Image, Gift, DollarSign, ClipboardList } from 'lucide-react';
+import { LogOut, Package, MapPin, Settings, Clock, Image, Gift, DollarSign, ClipboardList, Wallet } from 'lucide-react';
 import AdminProdutos from '@/components/admin/AdminProdutos';
 import AdminEntregas from '@/components/admin/AdminEntregas';
 import AdminHorario from '@/components/admin/AdminHorario';
@@ -12,6 +12,7 @@ import AdminBanner from '@/components/admin/AdminBanner';
 import AdminPromocoes from '@/components/admin/AdminPromocoes';
 import AdminFinanceiro from '@/components/admin/AdminFinanceiro';
 import AdminPedidos from '@/components/admin/AdminPedidos';
+import AdminPagamentos from '@/components/admin/AdminPagamentos';
 
 const Admin = () => {
   const { user, signOut } = useAdmin();
