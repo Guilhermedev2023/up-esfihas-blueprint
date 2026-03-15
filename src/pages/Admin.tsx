@@ -80,6 +80,10 @@ const Admin = () => {
               <DollarSign className="h-4 w-4" />
               <span className="hidden sm:inline">Financeiro</span>
             </TabsTrigger>
+            <TabsTrigger value="pagamentos" className="flex items-center gap-2">
+              <Wallet className="h-4 w-4" />
+              <span className="hidden sm:inline">Pagamentos</span>
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="pedidos">
