@@ -347,7 +347,10 @@ const Pagamento = () => {
         return;
       }
 
-      await supabase.from('pedidos').update({ metodo_pagamento: 'card_online' }).eq('id', result.id);
+      await supabase.from('pedidos').update({
+        metodo_pagamento: 'card_online',
+        observacao_pagamento: observacaoPagamento.trim() || null,
+      }).eq('id', result.id);
       setPedidoCriado(result);
 
       const { data, error } = await supabase.functions.invoke('create-payment-intent', {
