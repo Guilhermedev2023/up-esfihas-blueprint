@@ -71,6 +71,9 @@ const Pagamento = () => {
 
   // Payment state
   const [metodoPagamento, setMetodoPagamento] = useState<PaymentMethod>('');
+  const [entregaSubMethod, setEntregaSubMethod] = useState<EntregaSubMethod>('');
+  const [trocoPara, setTrocoPara] = useState<string>('');
+  const [observacaoPagamento, setObservacaoPagamento] = useState('');
   const [salvandoPedido, setSalvandoPedido] = useState(false);
   const [cupomGerado, setCupomGerado] = useState<string | null>(null);
 
