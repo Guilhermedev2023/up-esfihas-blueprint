@@ -24,6 +24,7 @@ interface Pedido {
   user_id: string | null;
   troco: number | null;
   observacao_pagamento: string | null;
+  cliente_nome?: string | null;
 }
 
 const STATUS_COLUMNS = [
@@ -112,7 +113,15 @@ const AdminPedidos = () => {
         .gte('created_at', cycleStart)
         .order('created_at', { ascending: false });
       if (error) throw error;
-      return data as Pedido[];
+      const list = (data || []) as Pedido[];
+      const userIds = Array.from(new Set(list.map(p => p.user_id).filter(Boolean))) as string[];
+      if (userIds.length === 0) return list;
+      const { data: profs } = await supabase
+        .from('profiles')
+        .select('user_id, nome')
+        .in('user_id', userIds);
+      const nameMap = new Map<string, string>((profs || []).map((p: any) => [p.user_id, p.nome]));
+      return list.map(p => ({ ...p, cliente_nome: p.user_id ? nameMap.get(p.user_id) || null : null }));
     },
   });
 
@@ -258,6 +267,12 @@ const AdminPedidos = () => {
                           {formatTime(pedido.created_at)}
                         </span>
                       </div>
+
+                      {pedido.cliente_nome && (
+                        <div className="text-lg font-bold leading-tight uppercase tracking-tight">
+                          {pedido.cliente_nome}
+                        </div>
+                      )}
 
                       <div className="text-xs text-muted-foreground flex items-center gap-1">
                         <Phone className="h-3 w-3" />
