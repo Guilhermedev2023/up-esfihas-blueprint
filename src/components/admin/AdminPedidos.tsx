@@ -6,7 +6,17 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { toast } from 'sonner';
-import { ChevronRight, Clock, MapPin, Phone, CreditCard, Eye, Volume2, VolumeX, AlertTriangle } from 'lucide-react';
+import { ChevronRight, Clock, MapPin, Phone, CreditCard, Eye, Volume2, VolumeX, AlertTriangle, MessageCircle } from 'lucide-react';
+
+const buildWhatsAppLink = (telefone: string, nome: string | null | undefined, numero: number, tipo: 'saiu' | 'finalizado'): string => {
+  const digits = (telefone || '').replace(/\D/g, '');
+  const phone = digits.startsWith('55') ? digits : `55${digits}`;
+  const nomeStr = (nome || 'cliente').split(' ')[0];
+  const msg = tipo === 'saiu'
+    ? `Olá, ${nomeStr}! 🛵 Seu pedido #${numero} da UP Esfihas Artesanais já saiu para entrega! Em breve chegará no seu endereço. Obrigado pela preferência! 🫓`
+    : `Olá, ${nomeStr}! ✅ Seu pedido #${numero} da UP Esfihas Artesanais foi entregue com sucesso! Obrigado pela preferência. Qualquer dúvida, estamos à disposição! 🫓`;
+  return `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`;
+};
 
 
 interface Pedido {
@@ -372,6 +382,20 @@ const AdminPedidos = () => {
                         <Button variant="ghost" size="sm" className="flex-1 h-7 text-xs" onClick={() => setSelectedPedido(pedido)}>
                           <Eye className="h-3 w-3 mr-1" /> Ver
                         </Button>
+                        {(col.key === 'preparo' || col.key === 'saiu_entrega') && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-7 px-2 text-xs border-green-600 text-green-700 hover:bg-green-50"
+                            title="Notificar cliente no WhatsApp"
+                            onClick={() => {
+                              const tipo = col.key === 'preparo' ? 'saiu' : 'finalizado';
+                              window.open(buildWhatsAppLink(pedido.telefone, pedido.cliente_nome, pedido.numero, tipo), '_blank');
+                            }}
+                          >
+                            <MessageCircle className="h-3 w-3" />
+                          </Button>
+                        )}
                         {col.next && (
                           <Button size="sm" className="flex-1 h-7 text-xs" onClick={() => handleAdvanceStatus(pedido, col.next!)}>
                             {col.buttonLabel}
@@ -379,6 +403,7 @@ const AdminPedidos = () => {
                           </Button>
                         )}
                       </div>
+
                     </CardContent>
                   </Card>
                 ))}

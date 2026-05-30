@@ -65,9 +65,29 @@ const MeusPedidos = () => {
     enabled: !!user?.user_id,
   });
 
-  // Realtime subscription
+  // Realtime subscription with sound on important status changes
   useEffect(() => {
     if (!user?.user_id) return;
+
+    const playNotificationBeep = () => {
+      try {
+        const Ctx = (window.AudioContext || (window as any).webkitAudioContext);
+        if (!Ctx) return;
+        const ctx = new Ctx();
+        const playTone = (freq: number, when: number, dur = 0.2) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.frequency.value = freq;
+          gain.gain.value = 0.25;
+          osc.start(ctx.currentTime + when);
+          osc.stop(ctx.currentTime + when + dur);
+        };
+        playTone(660, 0);
+        playTone(880, 0.22);
+      } catch { /* silent */ }
+    };
 
     const channel = supabase
       .channel('meus-pedidos-realtime')
@@ -76,9 +96,19 @@ const MeusPedidos = () => {
         { event: 'UPDATE', schema: 'public', table: 'pedidos' },
         (payload) => {
           const updated = payload.new as any;
+          const previous = payload.old as any;
           if (updated.user_id === user.user_id) {
             queryClient.invalidateQueries({ queryKey: ['meus-pedidos'] });
-            toast.info(`Pedido #${updated.numero}: ${traduzirStatus(updated.status)}`);
+            const statusChanged = previous?.status !== updated.status;
+            if (statusChanged && updated.status === 'saiu_entrega') {
+              playNotificationBeep();
+              toast.success(`🛵 Seu pedido #${updated.numero} saiu para entrega!`, { duration: 8000 });
+            } else if (statusChanged && updated.status === 'finalizado') {
+              playNotificationBeep();
+              toast.success(`✅ Pedido #${updated.numero} entregue! Obrigado pela preferência.`, { duration: 8000 });
+            } else if (statusChanged) {
+              toast.info(`Pedido #${updated.numero}: ${traduzirStatus(updated.status)}`);
+            }
           }
         }
       )
@@ -96,6 +126,7 @@ const MeusPedidos = () => {
 
     return () => { supabase.removeChannel(channel); };
   }, [user?.user_id, queryClient]);
+
 
   if (!isAuthenticated) {
     return (
