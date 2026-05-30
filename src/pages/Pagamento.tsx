@@ -679,8 +679,12 @@ const Pagamento = () => {
                           </div>
                         </div>
                       </div>
-                      <Button onClick={() => handleFinalizarEntrega()} className="w-full" size="lg">
-                        ✅ Confirmar Pedido
+                      <Button onClick={() => handleFinalizarEntrega()} className="w-full" size="lg" disabled={salvandoPedido}>
+                        {salvandoPedido ? (
+                          <><Loader2 className="h-4 w-4 animate-spin mr-2" /> Enviando...</>
+                        ) : (
+                          '✅ Confirmar Pedido'
+                        )}
                       </Button>
                     </CardContent>
                   </Card>

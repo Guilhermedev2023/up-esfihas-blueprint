@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { toast } from 'sonner';
-import { ChevronRight, Clock, MapPin, Phone, CreditCard, Eye, Volume2, VolumeX } from 'lucide-react';
+import { ChevronRight, Clock, MapPin, Phone, CreditCard, Eye, Volume2, VolumeX, AlertTriangle } from 'lucide-react';
 
 
 interface Pedido {
@@ -37,6 +37,16 @@ const PAYMENT_LABELS: Record<string, string> = {
   'dinheiro_entrega': '💵 Dinheiro',
   'maquininha_entrega': '💳 Maquininha',
   'pendente': '⏳ Pendente',
+};
+
+const isPossibleDuplicate = (pedido: Pedido, allPedidos: Pedido[]): boolean => {
+  const pedidoTime = new Date(pedido.created_at).getTime();
+  return allPedidos.some(p =>
+    p.id !== pedido.id &&
+    p.telefone === pedido.telefone &&
+    p.total === pedido.total &&
+    Math.abs(new Date(p.created_at).getTime() - pedidoTime) < 5 * 60 * 1000
+  );
 };
 
 export const traduzirStatus = (status: string): string => {
