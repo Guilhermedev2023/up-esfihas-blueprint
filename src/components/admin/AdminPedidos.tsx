@@ -35,7 +35,11 @@ interface Pedido {
   troco: number | null;
   observacao_pagamento: string | null;
   cliente_nome?: string | null;
+  goup_delivery_id?: string | null;
+  goup_status?: string | null;
+  goup_last_error?: string | null;
 }
+
 
 const STATUS_COLUMNS = [
   { key: 'pendente', label: 'Aceitar Pedido', color: 'bg-orange-500', next: 'preparo', buttonLabel: 'Aceitar Pedido' },
