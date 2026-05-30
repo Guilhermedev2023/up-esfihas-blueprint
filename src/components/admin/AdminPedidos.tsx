@@ -6,7 +6,17 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { toast } from 'sonner';
-import { ChevronRight, Clock, MapPin, Phone, CreditCard, Eye, Volume2, VolumeX, AlertTriangle } from 'lucide-react';
+import { ChevronRight, Clock, MapPin, Phone, CreditCard, Eye, Volume2, VolumeX, AlertTriangle, MessageCircle } from 'lucide-react';
+
+const buildWhatsAppLink = (telefone: string, nome: string | null | undefined, numero: number, tipo: 'saiu' | 'finalizado'): string => {
+  const digits = (telefone || '').replace(/\D/g, '');
+  const phone = digits.startsWith('55') ? digits : `55${digits}`;
+  const nomeStr = (nome || 'cliente').split(' ')[0];
+  const msg = tipo === 'saiu'
+    ? `Olá, ${nomeStr}! 🛵 Seu pedido #${numero} da UP Esfihas Artesanais já saiu para entrega! Em breve chegará no seu endereço. Obrigado pela preferência! 🫓`
+    : `Olá, ${nomeStr}! ✅ Seu pedido #${numero} da UP Esfihas Artesanais foi entregue com sucesso! Obrigado pela preferência. Qualquer dúvida, estamos à disposição! 🫓`;
+  return `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`;
+};
 
 
 interface Pedido {
