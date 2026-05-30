@@ -243,7 +243,7 @@ const AdminPedidos = () => {
 
               <div className="space-y-2 min-h-[200px]">
                 {colPedidos.map((pedido) => (
-                  <Card key={pedido.id} className="border shadow-sm hover:shadow-md transition-shadow">
+                  <Card key={pedido.id} className={`border shadow-sm hover:shadow-md transition-shadow ${isPossibleDuplicate(pedido, pedidos) ? 'border-red-400 bg-red-50/30' : ''}`}>
                     <CardContent className="p-3 space-y-2">
                       <div className="flex items-center justify-between">
                         <span className="font-bold text-sm">#{pedido.numero}</span>
