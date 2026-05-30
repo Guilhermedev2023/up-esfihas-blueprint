@@ -382,6 +382,20 @@ const AdminPedidos = () => {
                         <Button variant="ghost" size="sm" className="flex-1 h-7 text-xs" onClick={() => setSelectedPedido(pedido)}>
                           <Eye className="h-3 w-3 mr-1" /> Ver
                         </Button>
+                        {(col.key === 'preparo' || col.key === 'saiu_entrega') && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-7 px-2 text-xs border-green-600 text-green-700 hover:bg-green-50"
+                            title="Notificar cliente no WhatsApp"
+                            onClick={() => {
+                              const tipo = col.key === 'preparo' ? 'saiu' : 'finalizado';
+                              window.open(buildWhatsAppLink(pedido.telefone, pedido.cliente_nome, pedido.numero, tipo), '_blank');
+                            }}
+                          >
+                            <MessageCircle className="h-3 w-3" />
+                          </Button>
+                        )}
                         {col.next && (
                           <Button size="sm" className="flex-1 h-7 text-xs" onClick={() => handleAdvanceStatus(pedido, col.next!)}>
                             {col.buttonLabel}
@@ -389,6 +403,7 @@ const AdminPedidos = () => {
                           </Button>
                         )}
                       </div>
+
                     </CardContent>
                   </Card>
                 ))}
