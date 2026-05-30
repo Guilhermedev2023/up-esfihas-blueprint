@@ -334,6 +334,22 @@ const AdminPedidos = () => {
                 </div>
               </div>
 
+              {(selectedPedido.troco || selectedPedido.observacao_pagamento) && (
+                <div className="rounded-lg border-2 border-amber-300 bg-amber-50 dark:bg-amber-950/20 p-3 text-sm space-y-1">
+                  {selectedPedido.troco && (
+                    <p>
+                      <span className="font-semibold">💵 Troco para:</span> R$ {Number(selectedPedido.troco).toFixed(2)}
+                      <span className="ml-2 text-muted-foreground">
+                        (devolver R$ {(Number(selectedPedido.troco) - Number(selectedPedido.total)).toFixed(2)})
+                      </span>
+                    </p>
+                  )}
+                  {selectedPedido.observacao_pagamento && (
+                    <p><span className="font-semibold">📝 Observação:</span> {selectedPedido.observacao_pagamento}</p>
+                  )}
+                </div>
+              )}
+
               {selectedPedido.endereco && (
                 <div className="rounded-lg bg-muted p-3 text-sm space-y-1">
                   <p className="font-semibold flex items-center gap-1">
