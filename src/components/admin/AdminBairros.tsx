@@ -291,6 +291,35 @@ const AdminBairros = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={!!deletingBairro} onOpenChange={(open) => !open && setDeletingBairro(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remover bairro?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja remover <strong>{deletingBairro?.nome}</strong>? Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={async () => {
+                if (!deletingBairro) return;
+                try {
+                  await deleteBairro.mutateAsync(deletingBairro.id);
+                  toast.success(`${deletingBairro.nome} removido`);
+                  setDeletingBairro(null);
+                } catch {
+                  toast.error('Erro ao remover bairro');
+                }
+              }}
+            >
+              Remover
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
