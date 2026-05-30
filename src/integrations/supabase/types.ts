@@ -285,6 +285,7 @@ export type Database = {
           items: Json
           metodo_pagamento: string
           numero: number
+          observacao_pagamento: string | null
           status: string | null
           subtotal: number
           taxa_entrega: number
@@ -304,6 +305,7 @@ export type Database = {
           items: Json
           metodo_pagamento: string
           numero: number
+          observacao_pagamento?: string | null
           status?: string | null
           subtotal: number
           taxa_entrega: number
@@ -323,6 +325,7 @@ export type Database = {
           items?: Json
           metodo_pagamento?: string
           numero?: number
+          observacao_pagamento?: string | null
           status?: string | null
           subtotal?: number
           taxa_entrega?: number
