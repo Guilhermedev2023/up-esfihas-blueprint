@@ -418,6 +418,13 @@ const AdminPedidos = () => {
                           </Button>
                         </div>
                       )}
+                      {pedido.observacao_pagamento && (
+                        <div className="text-[10px] text-muted-foreground italic line-clamp-2">
+                          📝 {pedido.observacao_pagamento}
+                        </div>
+                      )}
+
+
 
 
 
