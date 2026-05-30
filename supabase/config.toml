@@ -1,1 +1,4 @@
 project_id = "yjhrlkwselsqymewpdgc"
+
+[functions.goup-webhook]
+verify_jwt = false
