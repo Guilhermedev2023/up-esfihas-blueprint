@@ -260,6 +260,23 @@ const Pagamento = () => {
   // ---- PAYMENT HANDLERS ----
   const handleFinalizarEntrega = async () => {
     if (salvandoPedido || !confirmedAddress || !user) return;
+
+    // Validar sub-método de entrega
+    if (!entregaSubMethod) {
+      toast.error('Escolha como você vai pagar na entrega (PIX, dinheiro ou maquininha).');
+      return;
+    }
+
+    // Validar troco se for dinheiro
+    let trocoNum: number | null = null;
+    if (entregaSubMethod === 'dinheiro' && trocoPara.trim()) {
+      trocoNum = parseFloat(trocoPara.replace(',', '.'));
+      if (Number.isNaN(trocoNum) || trocoNum < totalFinal) {
+        toast.error(`O valor do troco precisa ser maior ou igual a R$ ${totalFinal.toFixed(2)}.`);
+        return;
+      }
+    }
+
     setSalvandoPedido(true);
 
     try {
@@ -279,7 +296,16 @@ const Pagamento = () => {
         return;
       }
 
-      await supabase.from('pedidos').update({ metodo_pagamento: 'entrega' }).eq('id', result.id);
+      const metodoFinal =
+        entregaSubMethod === 'pix' ? 'pix_entrega' :
+        entregaSubMethod === 'dinheiro' ? 'dinheiro' :
+        'maquininha';
+
+      await supabase.from('pedidos').update({
+        metodo_pagamento: metodoFinal,
+        troco: trocoNum,
+        observacao_pagamento: observacaoPagamento.trim() || null,
+      }).eq('id', result.id);
 
       if (cupomGerado) toast.success(`🎉 Você ganhou o cupom ${cupomGerado} para seu próximo pedido!`, { duration: 10000 });
 
