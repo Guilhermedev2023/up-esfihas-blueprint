@@ -8,11 +8,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { useCart } from '@/contexts/CartContext';
 import { useAuth } from '@/contexts/AuthContext';
 import {
   Truck, CheckCircle2, MapPin, Tag, Gift, CreditCard,
-  Loader2, Home, AlertCircle, Clock, Ruler, ArrowLeft, ChevronRight
+  Loader2, Home, AlertCircle, Clock, Ruler, ArrowLeft, ChevronRight,
+  QrCode, Banknote, Smartphone, Copy
 } from 'lucide-react';
 
 import { toast } from 'sonner';
@@ -38,6 +40,11 @@ export interface ConfirmedAddress {
 }
 
 type PaymentMethod = 'card_online' | 'entrega' | '';
+type EntregaSubMethod = 'pix' | 'dinheiro' | 'maquininha' | '';
+
+// Chave PIX do restaurante (pode ser movida para configuração futuramente)
+const PIX_KEY = '48991506966';
+const PIX_NOME = 'UP Esfihas Artesanais';
 
 const Pagamento = () => {
   const navigate = useNavigate();
@@ -64,6 +71,9 @@ const Pagamento = () => {
 
   // Payment state
   const [metodoPagamento, setMetodoPagamento] = useState<PaymentMethod>('');
+  const [entregaSubMethod, setEntregaSubMethod] = useState<EntregaSubMethod>('');
+  const [trocoPara, setTrocoPara] = useState<string>('');
+  const [observacaoPagamento, setObservacaoPagamento] = useState('');
   const [salvandoPedido, setSalvandoPedido] = useState(false);
   const [cupomGerado, setCupomGerado] = useState<string | null>(null);
 
@@ -250,6 +260,23 @@ const Pagamento = () => {
   // ---- PAYMENT HANDLERS ----
   const handleFinalizarEntrega = async () => {
     if (salvandoPedido || !confirmedAddress || !user) return;
+
+    // Validar sub-método de entrega
+    if (!entregaSubMethod) {
+      toast.error('Escolha como você vai pagar na entrega (PIX, dinheiro ou maquininha).');
+      return;
+    }
+
+    // Validar troco se for dinheiro
+    let trocoNum: number | null = null;
+    if (entregaSubMethod === 'dinheiro' && trocoPara.trim()) {
+      trocoNum = parseFloat(trocoPara.replace(',', '.'));
+      if (Number.isNaN(trocoNum) || trocoNum < totalFinal) {
+        toast.error(`O valor do troco precisa ser maior ou igual a R$ ${totalFinal.toFixed(2)}.`);
+        return;
+      }
+    }
+
     setSalvandoPedido(true);
 
     try {
@@ -269,7 +296,16 @@ const Pagamento = () => {
         return;
       }
 
-      await supabase.from('pedidos').update({ metodo_pagamento: 'entrega' }).eq('id', result.id);
+      const metodoFinal =
+        entregaSubMethod === 'pix' ? 'pix_entrega' :
+        entregaSubMethod === 'dinheiro' ? 'dinheiro' :
+        'maquininha';
+
+      await supabase.from('pedidos').update({
+        metodo_pagamento: metodoFinal,
+        troco: trocoNum,
+        observacao_pagamento: observacaoPagamento.trim() || null,
+      }).eq('id', result.id);
 
       if (cupomGerado) toast.success(`🎉 Você ganhou o cupom ${cupomGerado} para seu próximo pedido!`, { duration: 10000 });
 
@@ -649,37 +685,128 @@ const Pagamento = () => {
                       </CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-6">
-                      <div className="rounded-lg bg-accent/10 p-6 space-y-4">
-                        <p className="text-base">
-                          Você pagará na entrega via <strong>PIX, dinheiro ou maquininha</strong>.
-                        </p>
-                        <p className="text-sm text-muted-foreground">Valor total: <strong>R$ {totalFinal.toFixed(2)}</strong></p>
-
-                        <div className="space-y-2 text-sm">
-                          <p className="font-semibold">Resumo:</p>
-                          {items.map(item => (
-                            <div key={item.id} className="flex justify-between">
-                              <span>{item.quantidade}x {item.nome}</span>
-                              <span>R$ {(item.preco * item.quantidade).toFixed(2)}</span>
-                            </div>
-                          ))}
-                          <div className="border-t pt-2 space-y-1">
-                            <div className="flex justify-between">
-                              <span>Subtotal</span>
-                              <span>R$ {subtotal.toFixed(2)}</span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span>Taxa de entrega</span>
-                              <span>R$ {taxaEntregaFinal.toFixed(2)}</span>
-                            </div>
-                            <div className="flex justify-between font-bold text-base pt-1">
-                              <span>Total</span>
-                              <span className="text-primary">R$ {totalFinal.toFixed(2)}</span>
-                            </div>
-                          </div>
-                        </div>
+                      <div className="rounded-lg bg-accent/10 p-4 space-y-3">
+                        <p className="text-sm text-muted-foreground">Total a pagar: <strong className="text-primary text-base">R$ {totalFinal.toFixed(2)}</strong></p>
                       </div>
-                      <Button onClick={() => handleFinalizarEntrega()} className="w-full" size="lg" disabled={salvandoPedido}>
+
+                      {/* Sub-método de pagamento */}
+                      <div className="space-y-3">
+                        <Label className="text-base font-semibold">Como você vai pagar? *</Label>
+                        <RadioGroup
+                          value={entregaSubMethod}
+                          onValueChange={(v) => { setEntregaSubMethod(v as EntregaSubMethod); setTrocoPara(''); }}
+                          className="space-y-2"
+                        >
+                          {/* PIX */}
+                          <Card className={`cursor-pointer transition-all ${entregaSubMethod === 'pix' ? 'border-primary ring-2 ring-primary/20' : 'hover:border-primary/50'}`}>
+                            <CardContent className="flex items-center gap-3 p-3">
+                              <RadioGroupItem value="pix" id="sub_pix" />
+                              <Label htmlFor="sub_pix" className="flex flex-1 cursor-pointer items-center gap-3">
+                                <QrCode className="h-5 w-5 text-primary" />
+                                <div>
+                                  <p className="font-semibold">PIX na entrega</p>
+                                  <p className="text-xs text-muted-foreground">Pague via QR Code ou chave PIX no momento da entrega</p>
+                                </div>
+                              </Label>
+                            </CardContent>
+                          </Card>
+
+                          {/* Dinheiro */}
+                          <Card className={`cursor-pointer transition-all ${entregaSubMethod === 'dinheiro' ? 'border-primary ring-2 ring-primary/20' : 'hover:border-primary/50'}`}>
+                            <CardContent className="p-3">
+                              <div className="flex items-center gap-3">
+                                <RadioGroupItem value="dinheiro" id="sub_dinheiro" />
+                                <Label htmlFor="sub_dinheiro" className="flex flex-1 cursor-pointer items-center gap-3">
+                                  <Banknote className="h-5 w-5 text-primary" />
+                                  <div>
+                                    <p className="font-semibold">Dinheiro</p>
+                                    <p className="text-xs text-muted-foreground">Informe se vai precisar de troco</p>
+                                  </div>
+                                </Label>
+                              </div>
+
+                              {entregaSubMethod === 'dinheiro' && (
+                                <div className="mt-3 pl-8 space-y-2">
+                                  <Label htmlFor="troco" className="text-sm">Precisa de troco para quanto? (opcional)</Label>
+                                  <Input
+                                    id="troco"
+                                    type="number"
+                                    step="0.01"
+                                    min={totalFinal}
+                                    placeholder={`Ex: ${(Math.ceil(totalFinal / 10) * 10).toFixed(2)}`}
+                                    value={trocoPara}
+                                    onChange={(e) => setTrocoPara(e.target.value)}
+                                  />
+                                  {trocoPara && !Number.isNaN(parseFloat(trocoPara.replace(',', '.'))) && parseFloat(trocoPara.replace(',', '.')) >= totalFinal && (
+                                    <p className="text-sm text-primary font-medium">
+                                      Troco: R$ {(parseFloat(trocoPara.replace(',', '.')) - totalFinal).toFixed(2)}
+                                    </p>
+                                  )}
+                                  {!trocoPara && (
+                                    <p className="text-xs text-muted-foreground">Deixe em branco se tiver o valor exato.</p>
+                                  )}
+                                </div>
+                              )}
+                            </CardContent>
+                          </Card>
+
+                          {/* Maquininha */}
+                          <Card className={`cursor-pointer transition-all ${entregaSubMethod === 'maquininha' ? 'border-primary ring-2 ring-primary/20' : 'hover:border-primary/50'}`}>
+                            <CardContent className="flex items-center gap-3 p-3">
+                              <RadioGroupItem value="maquininha" id="sub_maquininha" />
+                              <Label htmlFor="sub_maquininha" className="flex flex-1 cursor-pointer items-center gap-3">
+                                <Smartphone className="h-5 w-5 text-primary" />
+                                <div>
+                                  <p className="font-semibold">Cartão na maquininha</p>
+                                  <p className="text-xs text-muted-foreground">Crédito ou débito na entrega (não aceitamos VR)</p>
+                                </div>
+                              </Label>
+                            </CardContent>
+                          </Card>
+                        </RadioGroup>
+                      </div>
+
+                      {/* Informações do PIX */}
+                      {entregaSubMethod === 'pix' && (
+                        <div className="rounded-lg border-2 border-primary/30 bg-primary/5 p-4 space-y-3">
+                          <div className="flex items-center gap-2">
+                            <QrCode className="h-5 w-5 text-primary" />
+                            <p className="font-semibold">Chave PIX (telefone)</p>
+                          </div>
+                          <div className="flex items-center gap-2 rounded-md bg-background p-3 border">
+                            <code className="flex-1 text-sm font-mono break-all">{PIX_KEY}</code>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                navigator.clipboard.writeText(PIX_KEY);
+                                toast.success('Chave PIX copiada!');
+                              }}
+                            >
+                              <Copy className="h-4 w-4 mr-1" /> Copiar
+                            </Button>
+                          </div>
+                          <p className="text-xs text-muted-foreground">
+                            Beneficiário: <strong>{PIX_NOME}</strong>. Você pode pagar agora ou no momento da entrega — mostre o comprovante ao entregador.
+                          </p>
+                        </div>
+                      )}
+
+                      {/* Observação */}
+                      <div className="space-y-2">
+                        <Label htmlFor="obs-pagamento" className="text-sm font-semibold">Observação sobre o pagamento (opcional)</Label>
+                        <Textarea
+                          id="obs-pagamento"
+                          placeholder="Ex: vou pagar metade em PIX e metade em dinheiro"
+                          value={observacaoPagamento}
+                          onChange={(e) => setObservacaoPagamento(e.target.value)}
+                          maxLength={300}
+                          rows={2}
+                        />
+                      </div>
+
+                      <Button onClick={() => handleFinalizarEntrega()} className="w-full" size="lg" disabled={salvandoPedido || !entregaSubMethod}>
                         {salvandoPedido ? (
                           <><Loader2 className="h-4 w-4 animate-spin mr-2" /> Enviando...</>
                         ) : (

@@ -22,6 +22,8 @@ interface Pedido {
   status: string;
   created_at: string;
   user_id: string | null;
+  troco: number | null;
+  observacao_pagamento: string | null;
 }
 
 const STATUS_COLUMNS = [
@@ -33,9 +35,13 @@ const STATUS_COLUMNS = [
 
 const PAYMENT_LABELS: Record<string, string> = {
   'card_online': '💳 Cartão Online',
-  'pix_entrega': 'PIX na Entrega',
+  'pix_entrega': '🔲 PIX na Entrega',
+  'pix': '🔲 PIX na Entrega',
+  'dinheiro': '💵 Dinheiro',
   'dinheiro_entrega': '💵 Dinheiro',
+  'maquininha': '💳 Maquininha',
   'maquininha_entrega': '💳 Maquininha',
+  'entrega': '🚚 Na Entrega',
   'pendente': '⏳ Pendente',
 };
 
@@ -274,6 +280,17 @@ const AdminPedidos = () => {
                         </Badge>
                       </div>
 
+                      {pedido.troco && (
+                        <div className="text-[10px] font-semibold text-amber-700 bg-amber-100 dark:bg-amber-900/30 px-2 py-1 rounded">
+                          💵 Troco p/ R$ {Number(pedido.troco).toFixed(2)} (devolver R$ {(Number(pedido.troco) - Number(pedido.total)).toFixed(2)})
+                        </div>
+                      )}
+                      {pedido.observacao_pagamento && (
+                        <div className="text-[10px] text-muted-foreground italic line-clamp-2">
+                          📝 {pedido.observacao_pagamento}
+                        </div>
+                      )}
+
                       <div className="flex gap-1">
                         <Button variant="ghost" size="sm" className="flex-1 h-7 text-xs" onClick={() => setSelectedPedido(pedido)}>
                           <Eye className="h-3 w-3 mr-1" /> Ver
@@ -327,6 +344,22 @@ const AdminPedidos = () => {
                   <Badge>{traduzirStatus(selectedPedido.status)}</Badge>
                 </div>
               </div>
+
+              {(selectedPedido.troco || selectedPedido.observacao_pagamento) && (
+                <div className="rounded-lg border-2 border-amber-300 bg-amber-50 dark:bg-amber-950/20 p-3 text-sm space-y-1">
+                  {selectedPedido.troco && (
+                    <p>
+                      <span className="font-semibold">💵 Troco para:</span> R$ {Number(selectedPedido.troco).toFixed(2)}
+                      <span className="ml-2 text-muted-foreground">
+                        (devolver R$ {(Number(selectedPedido.troco) - Number(selectedPedido.total)).toFixed(2)})
+                      </span>
+                    </p>
+                  )}
+                  {selectedPedido.observacao_pagamento && (
+                    <p><span className="font-semibold">📝 Observação:</span> {selectedPedido.observacao_pagamento}</p>
+                  )}
+                </div>
+              )}
 
               {selectedPedido.endereco && (
                 <div className="rounded-lg bg-muted p-3 text-sm space-y-1">
