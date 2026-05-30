@@ -8,11 +8,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { useCart } from '@/contexts/CartContext';
 import { useAuth } from '@/contexts/AuthContext';
 import {
   Truck, CheckCircle2, MapPin, Tag, Gift, CreditCard,
-  Loader2, Home, AlertCircle, Clock, Ruler, ArrowLeft, ChevronRight
+  Loader2, Home, AlertCircle, Clock, Ruler, ArrowLeft, ChevronRight,
+  QrCode, Banknote, Smartphone, Copy
 } from 'lucide-react';
 
 import { toast } from 'sonner';
