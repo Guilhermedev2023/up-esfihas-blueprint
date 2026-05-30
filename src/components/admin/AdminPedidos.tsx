@@ -270,6 +270,18 @@ const AdminPedidos = () => {
 
   return (
     <div className="space-y-4">
+      {soundEnabled && !audioUnlocked && (
+        <button
+          onClick={unlockAudio}
+          className="w-full bg-amber-500/20 hover:bg-amber-500/30 border-2 border-amber-500 rounded-lg p-4 flex items-center justify-center gap-3 transition-colors animate-pulse cursor-pointer"
+        >
+          <Volume2 className="h-6 w-6 text-amber-600" />
+          <span className="font-semibold text-amber-700 text-base">
+            🔔 Clique aqui para ativar alertas sonoros de novos pedidos
+          </span>
+        </button>
+      )}
+
       {alertActive && (
         <div className="bg-yellow-500/20 border border-yellow-500 rounded-lg p-4 flex items-center justify-between animate-pulse">
           <div className="flex items-center gap-2">
@@ -281,11 +293,19 @@ const AdminPedidos = () => {
       )}
 
       <div className="flex justify-end">
-        <Button variant="ghost" size="sm" onClick={() => setSoundEnabled(!soundEnabled)} className="text-muted-foreground">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setSoundEnabled(!soundEnabled)}
+          className={soundEnabled && audioUnlocked ? 'text-green-600' : 'text-muted-foreground'}
+        >
           {soundEnabled ? <Volume2 className="h-4 w-4 mr-1" /> : <VolumeX className="h-4 w-4 mr-1" />}
-          {soundEnabled ? 'Som ativado' : 'Som desativado'}
+          {soundEnabled
+            ? (audioUnlocked ? '🔔 Som ativo' : '🔔 Som (aguardando ativação)')
+            : '🔕 Som desativado'}
         </Button>
       </div>
+
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {STATUS_COLUMNS.map((col) => {
