@@ -268,6 +268,12 @@ const AdminPedidos = () => {
                         </span>
                       </div>
 
+                      {pedido.cliente_nome && (
+                        <div className="text-lg font-bold leading-tight uppercase tracking-tight">
+                          {pedido.cliente_nome}
+                        </div>
+                      )}
+
                       <div className="text-xs text-muted-foreground flex items-center gap-1">
                         <Phone className="h-3 w-3" />
                         {pedido.telefone}
