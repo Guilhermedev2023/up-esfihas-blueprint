@@ -35,7 +35,11 @@ interface Pedido {
   troco: number | null;
   observacao_pagamento: string | null;
   cliente_nome?: string | null;
+  goup_delivery_id?: string | null;
+  goup_status?: string | null;
+  goup_last_error?: string | null;
 }
+
 
 const STATUS_COLUMNS = [
   { key: 'pendente', label: 'Aceitar Pedido', color: 'bg-orange-500', next: 'preparo', buttonLabel: 'Aceitar Pedido' },
@@ -266,10 +270,34 @@ const AdminPedidos = () => {
     onError: () => toast.error('Erro ao atualizar status'),
   });
 
+  const dispatchToGoup = useCallback(async (pedido: Pedido) => {
+    try {
+      const { data, error } = await supabase.functions.invoke('goup-create-delivery', {
+        body: { pedido_id: pedido.id },
+      });
+      if (error) throw error;
+      if (data?.ok) {
+        toast.success(`🛵 Pedido #${pedido.numero} enviado para o goup`);
+      } else {
+        toast.error(`Falha ao enviar para o goup: ${data?.error || 'erro desconhecido'}`);
+      }
+      queryClient.invalidateQueries({ queryKey: ['admin-pedidos'] });
+    } catch (err: any) {
+      console.error('[goup] erro ao enviar pedido', err);
+      toast.error('Não foi possível contatar o goup. O Kanban segue normalmente.');
+      queryClient.invalidateQueries({ queryKey: ['admin-pedidos'] });
+    }
+  }, [queryClient]);
+
   const handleAdvanceStatus = (pedido: Pedido, nextStatus: string) => {
-    if (pedido.status === 'pendente') stopAlert();
+    if (pedido.status === 'pendente') {
+      stopAlert();
+      // Fire-and-forget: enviar entrega ao goup sem bloquear o avanço de status
+      if (!pedido.goup_delivery_id) dispatchToGoup(pedido);
+    }
     updateStatus.mutate({ id: pedido.id, newStatus: nextStatus });
   };
+
 
   const formatTime = (date: string) =>
     new Date(date).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
@@ -372,11 +400,33 @@ const AdminPedidos = () => {
                           💵 Troco p/ R$ {Number(pedido.troco).toFixed(2)} (devolver R$ {(Number(pedido.troco) - Number(pedido.total)).toFixed(2)})
                         </div>
                       )}
+                      {pedido.goup_delivery_id && (
+                        <div className="text-[10px] font-semibold text-green-700 bg-green-100 dark:bg-green-900/30 px-2 py-1 rounded inline-flex items-center gap-1">
+                          🛵 Entregador designado
+                        </div>
+                      )}
+                      {!pedido.goup_delivery_id && pedido.goup_status === 'error' && (
+                        <div className="flex items-center justify-between gap-1 text-[10px] font-semibold text-red-700 bg-red-100 dark:bg-red-900/30 px-2 py-1 rounded">
+                          <span title={pedido.goup_last_error || ''}>⚠️ Falha na designação</span>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-5 px-1 text-[10px] text-red-700 hover:bg-red-200"
+                            onClick={(e) => { e.stopPropagation(); dispatchToGoup(pedido); }}
+                          >
+                            Tentar novamente
+                          </Button>
+                        </div>
+                      )}
                       {pedido.observacao_pagamento && (
                         <div className="text-[10px] text-muted-foreground italic line-clamp-2">
                           📝 {pedido.observacao_pagamento}
                         </div>
                       )}
+
+
+
+
 
                       <div className="flex gap-1">
                         <Button variant="ghost" size="sm" className="flex-1 h-7 text-xs" onClick={() => setSelectedPedido(pedido)}>

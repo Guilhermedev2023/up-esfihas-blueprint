@@ -238,6 +238,36 @@ export type Database = {
         }
         Relationships: []
       }
+      goup_sync_logs: {
+        Row: {
+          action: string
+          created_at: string
+          id: string
+          pedido_id: string | null
+          request_body: Json | null
+          response_body: Json | null
+          status: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          id?: string
+          pedido_id?: string | null
+          request_body?: Json | null
+          response_body?: Json | null
+          status?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          id?: string
+          pedido_id?: string | null
+          request_body?: Json | null
+          response_body?: Json | null
+          status?: string | null
+        }
+        Relationships: []
+      }
       horario_funcionamento: {
         Row: {
           ativo: boolean | null
@@ -278,6 +308,9 @@ export type Database = {
         Row: {
           created_at: string | null
           endereco: Json
+          goup_delivery_id: string | null
+          goup_last_error: string | null
+          goup_status: string | null
           id: string
           infinitepay_order_nsu: string | null
           infinitepay_receipt_url: string | null
@@ -298,6 +331,9 @@ export type Database = {
         Insert: {
           created_at?: string | null
           endereco: Json
+          goup_delivery_id?: string | null
+          goup_last_error?: string | null
+          goup_status?: string | null
           id?: string
           infinitepay_order_nsu?: string | null
           infinitepay_receipt_url?: string | null
@@ -318,6 +354,9 @@ export type Database = {
         Update: {
           created_at?: string | null
           endereco?: Json
+          goup_delivery_id?: string | null
+          goup_last_error?: string | null
+          goup_status?: string | null
           id?: string
           infinitepay_order_nsu?: string | null
           infinitepay_receipt_url?: string | null
