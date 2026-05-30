@@ -181,24 +181,52 @@ const AdminPedidos = () => {
     return () => { supabase.removeChannel(channel); };
   }, [soundEnabled, queryClient]);
 
+  const ensureAudioCtx = useCallback(() => {
+    if (!audioCtxRef.current) {
+      const Ctx = (window.AudioContext || (window as any).webkitAudioContext);
+      if (!Ctx) return null;
+      audioCtxRef.current = new Ctx();
+    }
+    if (audioCtxRef.current.state === 'suspended') {
+      audioCtxRef.current.resume().catch(() => {});
+    }
+    return audioCtxRef.current;
+  }, []);
+
+  const beep = useCallback((freq = 800, duration = 0.3, gainVal = 0.3) => {
+    const ctx = audioCtxRef.current;
+    if (!ctx || ctx.state !== 'running') return;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.frequency.value = freq;
+    gain.gain.value = gainVal;
+    osc.start();
+    osc.stop(ctx.currentTime + duration);
+  }, []);
+
   const playAlertSound = useCallback(() => {
     try {
-      const ctx = new AudioContext();
-      const playBeep = () => {
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.frequency.value = 800;
-        gain.gain.value = 0.3;
-        osc.start();
-        osc.stop(ctx.currentTime + 0.3);
-      };
-      playBeep();
+      ensureAudioCtx();
+      beep(800, 0.3);
       if (intervalRef.current) clearInterval(intervalRef.current);
-      intervalRef.current = setInterval(playBeep, 2000);
+      intervalRef.current = setInterval(() => beep(800, 0.3), 2000);
     } catch { /* Silent fail */ }
-  }, []);
+  }, [ensureAudioCtx, beep]);
+
+  const unlockAudio = useCallback(() => {
+    const ctx = ensureAudioCtx();
+    if (!ctx) {
+      toast.error('Seu navegador não suporta áudio');
+      return;
+    }
+    // Play confirmation chirp
+    setTimeout(() => beep(660, 0.15, 0.2), 50);
+    setTimeout(() => beep(880, 0.2, 0.2), 220);
+    setAudioUnlocked(true);
+    toast.success('🔔 Alertas sonoros ativados!');
+  }, [ensureAudioCtx, beep]);
 
   const stopAlert = useCallback(() => {
     setAlertActive(false);
@@ -207,6 +235,7 @@ const AdminPedidos = () => {
       intervalRef.current = null;
     }
   }, []);
+
 
   useEffect(() => {
     return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
