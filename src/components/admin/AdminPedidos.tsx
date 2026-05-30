@@ -69,14 +69,27 @@ export const traduzirStatus = (status: string): string => {
   }
 };
 
+const SOUND_PREF_KEY = 'admin-sound-enabled';
+
 const AdminPedidos = () => {
   const queryClient = useQueryClient();
   const [selectedPedido, setSelectedPedido] = useState<Pedido | null>(null);
   const [alertActive, setAlertActive] = useState(false);
-  const [soundEnabled, setSoundEnabled] = useState(true);
+  const [soundEnabled, setSoundEnabled] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return true;
+    const stored = localStorage.getItem(SOUND_PREF_KEY);
+    return stored === null ? true : stored === 'true';
+  });
+  const [audioUnlocked, setAudioUnlocked] = useState(false);
+  const audioCtxRef = useRef<AudioContext | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const knownIdsRef = useRef<Set<string>>(new Set());
   const initialLoadDone = useRef(false);
+
+  useEffect(() => {
+    localStorage.setItem(SOUND_PREF_KEY, String(soundEnabled));
+  }, [soundEnabled]);
+
 
 
   // Fetch store hours to determine current cycle start
@@ -168,24 +181,52 @@ const AdminPedidos = () => {
     return () => { supabase.removeChannel(channel); };
   }, [soundEnabled, queryClient]);
 
+  const ensureAudioCtx = useCallback(() => {
+    if (!audioCtxRef.current) {
+      const Ctx = (window.AudioContext || (window as any).webkitAudioContext);
+      if (!Ctx) return null;
+      audioCtxRef.current = new Ctx();
+    }
+    if (audioCtxRef.current.state === 'suspended') {
+      audioCtxRef.current.resume().catch(() => {});
+    }
+    return audioCtxRef.current;
+  }, []);
+
+  const beep = useCallback((freq = 800, duration = 0.3, gainVal = 0.3) => {
+    const ctx = audioCtxRef.current;
+    if (!ctx || ctx.state !== 'running') return;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.frequency.value = freq;
+    gain.gain.value = gainVal;
+    osc.start();
+    osc.stop(ctx.currentTime + duration);
+  }, []);
+
   const playAlertSound = useCallback(() => {
     try {
-      const ctx = new AudioContext();
-      const playBeep = () => {
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.frequency.value = 800;
-        gain.gain.value = 0.3;
-        osc.start();
-        osc.stop(ctx.currentTime + 0.3);
-      };
-      playBeep();
+      ensureAudioCtx();
+      beep(800, 0.3);
       if (intervalRef.current) clearInterval(intervalRef.current);
-      intervalRef.current = setInterval(playBeep, 2000);
+      intervalRef.current = setInterval(() => beep(800, 0.3), 2000);
     } catch { /* Silent fail */ }
-  }, []);
+  }, [ensureAudioCtx, beep]);
+
+  const unlockAudio = useCallback(() => {
+    const ctx = ensureAudioCtx();
+    if (!ctx) {
+      toast.error('Seu navegador não suporta áudio');
+      return;
+    }
+    // Play confirmation chirp
+    setTimeout(() => beep(660, 0.15, 0.2), 50);
+    setTimeout(() => beep(880, 0.2, 0.2), 220);
+    setAudioUnlocked(true);
+    toast.success('🔔 Alertas sonoros ativados!');
+  }, [ensureAudioCtx, beep]);
 
   const stopAlert = useCallback(() => {
     setAlertActive(false);
@@ -194,6 +235,7 @@ const AdminPedidos = () => {
       intervalRef.current = null;
     }
   }, []);
+
 
   useEffect(() => {
     return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
@@ -228,6 +270,18 @@ const AdminPedidos = () => {
 
   return (
     <div className="space-y-4">
+      {soundEnabled && !audioUnlocked && (
+        <button
+          onClick={unlockAudio}
+          className="w-full bg-amber-500/20 hover:bg-amber-500/30 border-2 border-amber-500 rounded-lg p-4 flex items-center justify-center gap-3 transition-colors animate-pulse cursor-pointer"
+        >
+          <Volume2 className="h-6 w-6 text-amber-600" />
+          <span className="font-semibold text-amber-700 text-base">
+            🔔 Clique aqui para ativar alertas sonoros de novos pedidos
+          </span>
+        </button>
+      )}
+
       {alertActive && (
         <div className="bg-yellow-500/20 border border-yellow-500 rounded-lg p-4 flex items-center justify-between animate-pulse">
           <div className="flex items-center gap-2">
@@ -239,11 +293,19 @@ const AdminPedidos = () => {
       )}
 
       <div className="flex justify-end">
-        <Button variant="ghost" size="sm" onClick={() => setSoundEnabled(!soundEnabled)} className="text-muted-foreground">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setSoundEnabled(!soundEnabled)}
+          className={soundEnabled && audioUnlocked ? 'text-green-600' : 'text-muted-foreground'}
+        >
           {soundEnabled ? <Volume2 className="h-4 w-4 mr-1" /> : <VolumeX className="h-4 w-4 mr-1" />}
-          {soundEnabled ? 'Som ativado' : 'Som desativado'}
+          {soundEnabled
+            ? (audioUnlocked ? '🔔 Som ativo' : '🔔 Som (aguardando ativação)')
+            : '🔕 Som desativado'}
         </Button>
       </div>
+
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {STATUS_COLUMNS.map((col) => {
