@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { toast } from 'sonner';
-import { ChevronRight, Clock, MapPin, Phone, CreditCard, Eye, Volume2, VolumeX } from 'lucide-react';
+import { ChevronRight, Clock, MapPin, Phone, CreditCard, Eye, Volume2, VolumeX, AlertTriangle } from 'lucide-react';
 
 
 interface Pedido {
@@ -37,6 +37,16 @@ const PAYMENT_LABELS: Record<string, string> = {
   'dinheiro_entrega': '💵 Dinheiro',
   'maquininha_entrega': '💳 Maquininha',
   'pendente': '⏳ Pendente',
+};
+
+const isPossibleDuplicate = (pedido: Pedido, allPedidos: Pedido[]): boolean => {
+  const pedidoTime = new Date(pedido.created_at).getTime();
+  return allPedidos.some(p =>
+    p.id !== pedido.id &&
+    p.telefone === pedido.telefone &&
+    p.total === pedido.total &&
+    Math.abs(new Date(p.created_at).getTime() - pedidoTime) < 5 * 60 * 1000
+  );
 };
 
 export const traduzirStatus = (status: string): string => {
@@ -233,7 +243,7 @@ const AdminPedidos = () => {
 
               <div className="space-y-2 min-h-[200px]">
                 {colPedidos.map((pedido) => (
-                  <Card key={pedido.id} className="border shadow-sm hover:shadow-md transition-shadow">
+                  <Card key={pedido.id} className={`border shadow-sm hover:shadow-md transition-shadow ${isPossibleDuplicate(pedido, pedidos) ? 'border-red-400 bg-red-50/30' : ''}`}>
                     <CardContent className="p-3 space-y-2">
                       <div className="flex items-center justify-between">
                         <span className="font-bold text-sm">#{pedido.numero}</span>
@@ -247,6 +257,13 @@ const AdminPedidos = () => {
                         <Phone className="h-3 w-3" />
                         {pedido.telefone}
                       </div>
+
+                      {isPossibleDuplicate(pedido, pedidos) && (
+                        <div className="flex items-center gap-1 text-[10px] text-red-600 font-semibold">
+                          <AlertTriangle className="h-3 w-3" />
+                          ⚠️ Possível duplicata
+                        </div>
+                      )}
 
                       <div className="flex items-center justify-between">
                         <span className="font-semibold text-primary text-sm">

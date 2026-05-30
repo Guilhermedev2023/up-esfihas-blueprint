@@ -200,13 +200,13 @@ const Pagamento = () => {
 
       if (error) {
         console.error('Erro ao criar pedido:', error);
-        return null;
+        throw error;
       }
 
       return { numero: numeroPedido, id: data.id };
     } catch (err) {
       console.error('Erro inesperado ao salvar pedido:', err);
-      return null;
+      throw err;
     }
   };
 
@@ -249,13 +249,13 @@ const Pagamento = () => {
 
   // ---- PAYMENT HANDLERS ----
   const handleFinalizarEntrega = async () => {
-    if (!confirmedAddress || !user) return;
+    if (salvandoPedido || !confirmedAddress || !user) return;
     setSalvandoPedido(true);
 
     try {
       const { data: authData, error: authError } = await supabase.auth.getUser();
       const authUserId = authData.user?.id;
-      if (authError || !authUserId) { toast.error('Sessão expirada.'); return; }
+      if (authError || !authUserId) { toast.error('Sessão expirada.'); setSalvandoPedido(false); return; }
 
       const recalcTaxa = freteGratis ? 0 : confirmedAddress.taxaEntrega;
       const recalcTotal = subtotal - descontoValor + recalcTaxa;
@@ -264,7 +264,10 @@ const Pagamento = () => {
       if (numPedidos === 0) await gerarCupomSegundoPedido();
 
       const result = await salvarPedidoDB(confirmedAddress, recalcTaxa, recalcTotal, authUserId, 'pendente');
-      if (!result) { toast.error('Erro ao criar pedido.'); return; }
+      if (!result) {
+        setSalvandoPedido(false);
+        return;
+      }
 
       await supabase.from('pedidos').update({ metodo_pagamento: 'entrega' }).eq('id', result.id);
 
@@ -275,20 +278,25 @@ const Pagamento = () => {
       clearCart();
       localStorage.removeItem('pedido_observacoes');
       navigate('/carrinho');
-    } finally {
+    } catch (err: any) {
+      if (err?.message?.includes('duplicado') || err?.code === 'P0001') {
+        toast.error('Detectamos um pedido idêntico realizado recentemente. Se precisar de ajuda, entre em contato pelo WhatsApp.');
+      } else {
+        toast.error('Erro ao criar pedido. Tente novamente.');
+      }
       setSalvandoPedido(false);
     }
   };
 
   const handlePagarOnline = async () => {
-    if (!confirmedAddress || !user) return;
+    if (salvandoPedido || !confirmedAddress || !user) return;
     setSalvandoPedido(true);
     setCreatingIntent(true);
 
     try {
       const { data: authData, error: authError } = await supabase.auth.getUser();
       const authUserId = authData.user?.id;
-      if (authError || !authUserId) { toast.error('Sessão expirada.'); return; }
+      if (authError || !authUserId) { toast.error('Sessão expirada.'); setSalvandoPedido(false); setCreatingIntent(false); return; }
 
       const recalcTaxa = freteGratis ? 0 : confirmedAddress.taxaEntrega;
       const recalcTotal = subtotal - descontoValor + recalcTaxa;
@@ -297,7 +305,11 @@ const Pagamento = () => {
       if (numPedidos === 0) await gerarCupomSegundoPedido();
 
       const result = await salvarPedidoDB(confirmedAddress, recalcTaxa, recalcTotal, authUserId, 'aguardando_pagamento');
-      if (!result) { toast.error('Erro ao criar pedido.'); return; }
+      if (!result) {
+        setSalvandoPedido(false);
+        setCreatingIntent(false);
+        return;
+      }
 
       await supabase.from('pedidos').update({ metodo_pagamento: 'card_online' }).eq('id', result.id);
       setPedidoCriado(result);
@@ -308,8 +320,11 @@ const Pagamento = () => {
       if (error) throw error;
       setClientSecret(data.clientSecret);
     } catch (err: any) {
-      toast.error('Erro ao iniciar pagamento: ' + (err.message || 'tente novamente'));
-    } finally {
+      if (err?.message?.includes('duplicado') || err?.code === 'P0001') {
+        toast.error('Detectamos um pedido idêntico realizado recentemente. Se precisar de ajuda, entre em contato pelo WhatsApp.');
+      } else {
+        toast.error('Erro ao iniciar pagamento: ' + (err.message || 'tente novamente'));
+      }
       setSalvandoPedido(false);
       setCreatingIntent(false);
     }
@@ -664,8 +679,12 @@ const Pagamento = () => {
                           </div>
                         </div>
                       </div>
-                      <Button onClick={() => handleFinalizarEntrega()} className="w-full" size="lg">
-                        ✅ Confirmar Pedido
+                      <Button onClick={() => handleFinalizarEntrega()} className="w-full" size="lg" disabled={salvandoPedido}>
+                        {salvandoPedido ? (
+                          <><Loader2 className="h-4 w-4 animate-spin mr-2" /> Enviando...</>
+                        ) : (
+                          '✅ Confirmar Pedido'
+                        )}
                       </Button>
                     </CardContent>
                   </Card>
