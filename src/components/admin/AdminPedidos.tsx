@@ -22,6 +22,8 @@ interface Pedido {
   status: string;
   created_at: string;
   user_id: string | null;
+  troco: number | null;
+  observacao_pagamento: string | null;
 }
 
 const STATUS_COLUMNS = [
@@ -33,9 +35,13 @@ const STATUS_COLUMNS = [
 
 const PAYMENT_LABELS: Record<string, string> = {
   'card_online': '💳 Cartão Online',
-  'pix_entrega': 'PIX na Entrega',
+  'pix_entrega': '🔲 PIX na Entrega',
+  'pix': '🔲 PIX na Entrega',
+  'dinheiro': '💵 Dinheiro',
   'dinheiro_entrega': '💵 Dinheiro',
+  'maquininha': '💳 Maquininha',
   'maquininha_entrega': '💳 Maquininha',
+  'entrega': '🚚 Na Entrega',
   'pendente': '⏳ Pendente',
 };
 
