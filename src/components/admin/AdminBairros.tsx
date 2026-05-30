@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useBairros, useUpdateBairro, useCreateBairro, Bairro } from '@/hooks/useBairros';
+import { useBairros, useUpdateBairro, useCreateBairro, useDeleteBairro, Bairro } from '@/hooks/useBairros';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,12 +7,16 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
-import { Loader2, Pencil, Plus, MapPin } from 'lucide-react';
+import { Loader2, Pencil, Plus, MapPin, Trash2 } from 'lucide-react';
 
 const AdminBairros = () => {
   const { data: bairros, isLoading, error } = useBairros(true);
   const updateBairro = useUpdateBairro();
+  const deleteBairro = useDeleteBairro();
+  const [deletingBairro, setDeletingBairro] = useState<Bairro | null>(null);
+
   const createBairro = useCreateBairro();
   const [editingBairro, setEditingBairro] = useState<Bairro | null>(null);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
