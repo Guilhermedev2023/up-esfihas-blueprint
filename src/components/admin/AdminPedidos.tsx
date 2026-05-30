@@ -280,6 +280,17 @@ const AdminPedidos = () => {
                         </Badge>
                       </div>
 
+                      {pedido.troco && (
+                        <div className="text-[10px] font-semibold text-amber-700 bg-amber-100 dark:bg-amber-900/30 px-2 py-1 rounded">
+                          💵 Troco p/ R$ {Number(pedido.troco).toFixed(2)} (devolver R$ {(Number(pedido.troco) - Number(pedido.total)).toFixed(2)})
+                        </div>
+                      )}
+                      {pedido.observacao_pagamento && (
+                        <div className="text-[10px] text-muted-foreground italic line-clamp-2">
+                          📝 {pedido.observacao_pagamento}
+                        </div>
+                      )}
+
                       <div className="flex gap-1">
                         <Button variant="ghost" size="sm" className="flex-1 h-7 text-xs" onClick={() => setSelectedPedido(pedido)}>
                           <Eye className="h-3 w-3 mr-1" /> Ver
