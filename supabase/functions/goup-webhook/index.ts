@@ -1,7 +1,7 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
 
-const GOUP_WEBHOOK_TOKEN = Deno.env.get('GOUP_WEBHOOK_TOKEN') || '6a2fc708f06940acb672948d5dbd4f1a';
+const GOUP_WEBHOOK_TOKEN = Deno.env.get('GOUP_WEBHOOK_TOKEN') || '';
 
 const STATUS_MAP: Record<string, string> = {
   dispatched: 'saiu_entrega',
@@ -19,15 +19,33 @@ const STATUS_MAP: Record<string, string> = {
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
 
+  // Health check / URL validation (goup pings the URL before saving)
+  if (req.method === 'GET' || req.method === 'HEAD') {
+    return new Response(
+      JSON.stringify({ ok: true, service: 'goup-webhook', ready: true }),
+      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+    );
+  }
+
   const supabase = createClient(
     Deno.env.get('SUPABASE_URL')!,
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
   );
 
   try {
+    if (!GOUP_WEBHOOK_TOKEN) {
+      return new Response(JSON.stringify({ error: 'Server misconfigured: GOUP_WEBHOOK_TOKEN missing' }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     const authHeader = req.headers.get('Authorization') || req.headers.get('authorization') || '';
+    const tokenHeader = req.headers.get('X-Webhook-Token') || req.headers.get('x-webhook-token') || '';
     const expected = `Bearer ${GOUP_WEBHOOK_TOKEN}`;
-    if (authHeader !== expected) {
+    const authorized = authHeader === expected || tokenHeader === GOUP_WEBHOOK_TOKEN;
+
+    if (!authorized) {
       await supabase.from('goup_sync_logs').insert({
         action: 'webhook_unauthorized',
         status: 'error',
@@ -41,7 +59,6 @@ Deno.serve(async (req) => {
 
     const body = await req.json().catch(() => ({}));
 
-    // goup can send variations of field names
     const goupStatus: string = body.status || body.event || body.delivery_status || '';
     const externalId: string | undefined = body.external_id || body.order_id || body.reference;
     const goupDeliveryId: string | undefined = body.id || body.delivery_id || body.goup_delivery_id;
