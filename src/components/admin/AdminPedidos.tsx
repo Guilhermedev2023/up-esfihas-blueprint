@@ -258,6 +258,13 @@ const AdminPedidos = () => {
                         {pedido.telefone}
                       </div>
 
+                      {isPossibleDuplicate(pedido, pedidos) && (
+                        <div className="flex items-center gap-1 text-[10px] text-red-600 font-semibold">
+                          <AlertTriangle className="h-3 w-3" />
+                          ⚠️ Possível duplicata
+                        </div>
+                      )}
+
                       <div className="flex items-center justify-between">
                         <span className="font-semibold text-primary text-sm">
                           R$ {Number(pedido.total).toFixed(2)}
