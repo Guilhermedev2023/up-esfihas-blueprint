@@ -24,6 +24,7 @@ interface Pedido {
   user_id: string | null;
   troco: number | null;
   observacao_pagamento: string | null;
+  cliente_nome?: string | null;
 }
 
 const STATUS_COLUMNS = [
