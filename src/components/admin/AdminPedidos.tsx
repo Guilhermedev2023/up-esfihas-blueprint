@@ -270,10 +270,34 @@ const AdminPedidos = () => {
     onError: () => toast.error('Erro ao atualizar status'),
   });
 
+  const dispatchToGoup = useCallback(async (pedido: Pedido) => {
+    try {
+      const { data, error } = await supabase.functions.invoke('goup-create-delivery', {
+        body: { pedido_id: pedido.id },
+      });
+      if (error) throw error;
+      if (data?.ok) {
+        toast.success(`🛵 Pedido #${pedido.numero} enviado para o goup`);
+      } else {
+        toast.error(`Falha ao enviar para o goup: ${data?.error || 'erro desconhecido'}`);
+      }
+      queryClient.invalidateQueries({ queryKey: ['admin-pedidos'] });
+    } catch (err: any) {
+      console.error('[goup] erro ao enviar pedido', err);
+      toast.error('Não foi possível contatar o goup. O Kanban segue normalmente.');
+      queryClient.invalidateQueries({ queryKey: ['admin-pedidos'] });
+    }
+  }, [queryClient]);
+
   const handleAdvanceStatus = (pedido: Pedido, nextStatus: string) => {
-    if (pedido.status === 'pendente') stopAlert();
+    if (pedido.status === 'pendente') {
+      stopAlert();
+      // Fire-and-forget: enviar entrega ao goup sem bloquear o avanço de status
+      if (!pedido.goup_delivery_id) dispatchToGoup(pedido);
+    }
     updateStatus.mutate({ id: pedido.id, newStatus: nextStatus });
   };
+
 
   const formatTime = (date: string) =>
     new Date(date).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
