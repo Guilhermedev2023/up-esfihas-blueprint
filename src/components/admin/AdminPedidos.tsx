@@ -69,14 +69,27 @@ export const traduzirStatus = (status: string): string => {
   }
 };
 
+const SOUND_PREF_KEY = 'admin-sound-enabled';
+
 const AdminPedidos = () => {
   const queryClient = useQueryClient();
   const [selectedPedido, setSelectedPedido] = useState<Pedido | null>(null);
   const [alertActive, setAlertActive] = useState(false);
-  const [soundEnabled, setSoundEnabled] = useState(true);
+  const [soundEnabled, setSoundEnabled] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return true;
+    const stored = localStorage.getItem(SOUND_PREF_KEY);
+    return stored === null ? true : stored === 'true';
+  });
+  const [audioUnlocked, setAudioUnlocked] = useState(false);
+  const audioCtxRef = useRef<AudioContext | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const knownIdsRef = useRef<Set<string>>(new Set());
   const initialLoadDone = useRef(false);
+
+  useEffect(() => {
+    localStorage.setItem(SOUND_PREF_KEY, String(soundEnabled));
+  }, [soundEnabled]);
+
 
 
   // Fetch store hours to determine current cycle start
