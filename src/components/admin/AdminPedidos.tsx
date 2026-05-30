@@ -113,7 +113,15 @@ const AdminPedidos = () => {
         .gte('created_at', cycleStart)
         .order('created_at', { ascending: false });
       if (error) throw error;
-      return data as Pedido[];
+      const list = (data || []) as Pedido[];
+      const userIds = Array.from(new Set(list.map(p => p.user_id).filter(Boolean))) as string[];
+      if (userIds.length === 0) return list;
+      const { data: profs } = await supabase
+        .from('profiles')
+        .select('user_id, nome')
+        .in('user_id', userIds);
+      const nameMap = new Map<string, string>((profs || []).map((p: any) => [p.user_id, p.nome]));
+      return list.map(p => ({ ...p, cliente_nome: p.user_id ? nameMap.get(p.user_id) || null : null }));
     },
   });
 
