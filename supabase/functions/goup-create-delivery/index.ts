@@ -1,7 +1,7 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
 
-const GOUP_API_TOKEN = Deno.env.get('GOUP_API_TOKEN') || 'c8b5408ac11741278f904795819b86f7';
+const GOUP_API_TOKEN = Deno.env.get('GOUP_API_TOKEN') || '';
 const GOUP_API_URL = Deno.env.get('GOUP_API_URL') || 'https://goup.entregas.io/api/v1/orders';
 
 async function sendToGoup(payload: Record<string, unknown>) {
