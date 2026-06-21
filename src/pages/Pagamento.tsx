@@ -42,8 +42,8 @@ export interface ConfirmedAddress {
 type PaymentMethod = 'card_online' | 'entrega' | '';
 type EntregaSubMethod = 'pix' | 'dinheiro' | 'maquininha' | '';
 
-// Chave PIX do restaurante (pode ser movida para configuração futuramente)
-const PIX_KEY = '48991506966';
+// Chave PIX do restaurante (chave aleatória)
+const PIX_KEY = 'c733de54-f7bf-49de-8bc8-1ee68b52904c';
 const PIX_NOME = 'UP Esfihas Artesanais';
 
 const Pagamento = () => {
