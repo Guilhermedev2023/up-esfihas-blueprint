@@ -28,7 +28,7 @@ export const DeliveryMap = ({ config }: DeliveryMapProps) => {
   const markersRef = useRef<any[]>([]);
   const { data: bairros } = useBairros(false);
 
-  // Load Google Maps script once
+  // Load Google Maps script once (key fetched from server-only edge function)
   useEffect(() => {
     if (window.google?.maps) {
       setScriptLoaded(true);
@@ -46,16 +46,26 @@ export const DeliveryMap = ({ config }: DeliveryMapProps) => {
       return () => clearInterval(check);
     }
 
-    const script = document.createElement('script');
-    script.src = `https://maps.googleapis.com/maps/api/js?key=AIzaSyAIGrAwT7IVVksCaB9tr7m_rjXbUYQ17Uw&callback=initDeliveryMap`;
-    script.async = true;
-    script.defer = true;
-    script.setAttribute('data-google-maps', 'true');
-
-    window.initDeliveryMap = () => setScriptLoaded(true);
-    document.head.appendChild(script);
+    let cancelled = false;
+    (async () => {
+      const { supabase } = await import('@/integrations/supabase/client');
+      const { data, error } = await supabase.functions.invoke('get-maps-key');
+      if (cancelled) return;
+      if (error || !data?.key) {
+        console.error('Falha ao carregar chave do Maps', error);
+        return;
+      }
+      const script = document.createElement('script');
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${data.key}&callback=initDeliveryMap`;
+      script.async = true;
+      script.defer = true;
+      script.setAttribute('data-google-maps', 'true');
+      window.initDeliveryMap = () => setScriptLoaded(true);
+      document.head.appendChild(script);
+    })();
 
     return () => {
+      cancelled = true;
       window.initDeliveryMap = () => {};
     };
   }, []);
