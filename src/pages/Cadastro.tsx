@@ -37,10 +37,11 @@ const Cadastro = () => {
         .eq('ativo', true)
         .order('nome');
       
-      if (!error && data) {
+      if (!error && data && data.length > 0) {
         setBairrosDisponiveis(data.map(b => b.nome));
       } else {
-        setBairrosDisponiveis(['Cachoeira', 'Ponta das Canas', 'Ingleses', 'Canasvieiras', 'Jurerê', 'Vargem Grande']);
+        if (error) console.error('Erro ao buscar bairros:', error);
+        setBairrosDisponiveis([]);
       }
     };
     fetchBairros();
