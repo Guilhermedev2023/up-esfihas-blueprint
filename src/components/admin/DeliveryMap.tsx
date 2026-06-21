@@ -2,21 +2,13 @@ import { useEffect, useRef, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, MapPin } from 'lucide-react';
-import { FaixaEntrega, ConfiguracaoRestaurante } from '@/hooks/useDeliveryConfig';
+import { ConfiguracaoRestaurante, FaixaEntrega } from '@/hooks/useDeliveryConfig';
+import { useBairros } from '@/hooks/useBairros';
 
 interface DeliveryMapProps {
   config: ConfiguracaoRestaurante | undefined;
-  faixas: FaixaEntrega[] | undefined;
+  faixas?: FaixaEntrega[] | undefined;
 }
-
-// Colors for different tiers (from closest to farthest)
-const TIER_COLORS = [
-  { fill: 'rgba(34, 197, 94, 0.3)', stroke: '#22c55e' },   // Green - 0-1km
-  { fill: 'rgba(132, 204, 22, 0.25)', stroke: '#84cc16' }, // Lime - 1-2km
-  { fill: 'rgba(234, 179, 8, 0.2)', stroke: '#eab308' },   // Yellow - 2-3km
-  { fill: 'rgba(249, 115, 22, 0.15)', stroke: '#f97316' }, // Orange - 3-5km
-  { fill: 'rgba(239, 68, 68, 0.1)', stroke: '#ef4444' },   // Red - 5km+
-];
 
 declare global {
   interface Window {
@@ -25,12 +17,16 @@ declare global {
   }
 }
 
-export const DeliveryMap = ({ config, faixas }: DeliveryMapProps) => {
+// Simple in-memory cache for geocoded bairros across renders
+const geocodeCache = new Map<string, { lat: number; lng: number }>();
+
+export const DeliveryMap = ({ config }: DeliveryMapProps) => {
   const mapRef = useRef<HTMLDivElement>(null);
   const [map, setMap] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [scriptLoaded, setScriptLoaded] = useState(false);
-  const circlesRef = useRef<any[]>([]);
+  const markersRef = useRef<any[]>([]);
+  const { data: bairros } = useBairros(false);
 
   // Load Google Maps script once
   useEffect(() => {
@@ -39,15 +35,24 @@ export const DeliveryMap = ({ config, faixas }: DeliveryMapProps) => {
       return;
     }
 
+    const existing = document.querySelector('script[data-google-maps]');
+    if (existing) {
+      const check = setInterval(() => {
+        if (window.google?.maps) {
+          setScriptLoaded(true);
+          clearInterval(check);
+        }
+      }, 200);
+      return () => clearInterval(check);
+    }
+
     const script = document.createElement('script');
     script.src = `https://maps.googleapis.com/maps/api/js?key=AIzaSyAIGrAwT7IVVksCaB9tr7m_rjXbUYQ17Uw&callback=initDeliveryMap`;
     script.async = true;
     script.defer = true;
+    script.setAttribute('data-google-maps', 'true');
 
-    window.initDeliveryMap = () => {
-      setScriptLoaded(true);
-    };
-
+    window.initDeliveryMap = () => setScriptLoaded(true);
     document.head.appendChild(script);
 
     return () => {
@@ -55,32 +60,20 @@ export const DeliveryMap = ({ config, faixas }: DeliveryMapProps) => {
     };
   }, []);
 
-  // Initialize map when script is loaded AND config is available
+  // Initialize map
   useEffect(() => {
     if (!scriptLoaded || !window.google?.maps) return;
-    if (!mapRef.current || !config?.latitude || !config?.longitude) {
-      return;
-    }
-    if (map) return; // Already initialized
+    if (!mapRef.current || !config?.latitude || !config?.longitude) return;
+    if (map) return;
 
-    const restaurantLocation = {
-      lat: config.latitude,
-      lng: config.longitude,
-    };
+    const restaurantLocation = { lat: config.latitude, lng: config.longitude };
 
     const mapInstance = new window.google.maps.Map(mapRef.current, {
       center: restaurantLocation,
       zoom: 12,
-      styles: [
-        {
-          featureType: 'poi',
-          elementType: 'labels',
-          stylers: [{ visibility: 'off' }],
-        },
-      ],
+      styles: [{ featureType: 'poi', elementType: 'labels', stylers: [{ visibility: 'off' }] }],
     });
 
-    // Add restaurant marker
     new window.google.maps.Marker({
       position: restaurantLocation,
       map: mapInstance,
@@ -89,76 +82,98 @@ export const DeliveryMap = ({ config, faixas }: DeliveryMapProps) => {
         url: 'https://maps.google.com/mapfiles/ms/icons/red-dot.png',
         scaledSize: new window.google.maps.Size(40, 40),
       },
+      zIndex: 999,
     });
 
     setMap(mapInstance);
     setIsLoading(false);
   }, [scriptLoaded, config, map]);
 
-  // Draw circles when map or faixas change
+  // Place markers for each active bairro (geocoded)
   useEffect(() => {
-    if (!map || !config?.latitude || !config?.longitude || !faixas) return;
+    if (!map || !window.google?.maps || !bairros) return;
 
-    // Clear existing circles
-    circlesRef.current.forEach((circle) => circle.setMap(null));
-    circlesRef.current = [];
+    // Clear existing markers
+    markersRef.current.forEach((m) => m.setMap(null));
+    markersRef.current = [];
 
-    const restaurantLocation = {
-      lat: config.latitude,
-      lng: config.longitude,
+    const ativos = bairros.filter((b) => b.ativo);
+    const geocoder = new window.google.maps.Geocoder();
+    const bounds = new window.google.maps.LatLngBounds();
+    if (config?.latitude && config?.longitude) {
+      bounds.extend({ lat: config.latitude, lng: config.longitude });
+    }
+
+    let pending = ativos.length;
+    const fitIfDone = () => {
+      pending -= 1;
+      if (pending <= 0 && !bounds.isEmpty()) {
+        map.fitBounds(bounds);
+      }
     };
 
-    // Sort faixas by max distance (draw largest first so smaller ones appear on top)
-    const sortedFaixas = [...faixas]
-      .filter((f) => f.ativo)
-      .sort((a, b) => b.distancia_max_km - a.distancia_max_km);
+    ativos.forEach((bairro) => {
+      const key = bairro.nome.trim().toLowerCase();
+      const placeMarker = (pos: { lat: number; lng: number }) => {
+        const marker = new window.google.maps.Marker({
+          position: pos,
+          map,
+          title: bairro.nome,
+          label: {
+            text: bairro.nome,
+            className: 'bairro-marker-label',
+            color: '#1f2937',
+            fontSize: '12px',
+            fontWeight: '600',
+          },
+          icon: {
+            url: 'https://maps.google.com/mapfiles/ms/icons/green-dot.png',
+            scaledSize: new window.google.maps.Size(32, 32),
+            labelOrigin: new window.google.maps.Point(16, 38),
+          },
+        });
+        markersRef.current.push(marker);
+        bounds.extend(pos);
+        fitIfDone();
+      };
 
-    sortedFaixas.forEach((faixa, index) => {
-      const colorIndex = Math.min(sortedFaixas.length - 1 - index, TIER_COLORS.length - 1);
-      const colors = TIER_COLORS[colorIndex];
+      const cached = geocodeCache.get(key);
+      if (cached) {
+        placeMarker(cached);
+        return;
+      }
 
-      const circle = new window.google.maps.Circle({
-        strokeColor: colors.stroke,
-        strokeOpacity: 0.8,
-        strokeWeight: 2,
-        fillColor: colors.fill,
-        fillOpacity: 1,
-        map,
-        center: restaurantLocation,
-        radius: faixa.distancia_max_km * 1000, // Convert km to meters
-      });
-
-      circlesRef.current.push(circle);
+      geocoder.geocode(
+        { address: `${bairro.nome}, Florianópolis, SC, Brasil` },
+        (results: any, status: string) => {
+          if (status === 'OK' && results?.[0]) {
+            const loc = results[0].geometry.location;
+            const pos = { lat: loc.lat(), lng: loc.lng() };
+            geocodeCache.set(key, pos);
+            placeMarker(pos);
+          } else {
+            fitIfDone();
+          }
+        }
+      );
     });
 
-    // Fit bounds to show all circles
-    if (sortedFaixas.length > 0) {
-      const maxDistance = Math.max(...sortedFaixas.map((f) => f.distancia_max_km));
-      const bounds = new window.google.maps.LatLngBounds();
-      
-      // Calculate bounds based on max distance
-      const earthRadius = 6371; // km
-      const latOffset = (maxDistance / earthRadius) * (180 / Math.PI);
-      const lngOffset = latOffset / Math.cos(config.latitude * (Math.PI / 180));
-
-      bounds.extend({ lat: config.latitude + latOffset, lng: config.longitude + lngOffset });
-      bounds.extend({ lat: config.latitude - latOffset, lng: config.longitude - lngOffset });
-      
-      map.fitBounds(bounds);
+    if (ativos.length === 0 && config?.latitude && config?.longitude) {
+      map.setCenter({ lat: config.latitude, lng: config.longitude });
     }
-  }, [map, faixas, config]);
+  }, [map, bairros, config]);
 
-  const activeFaixas = faixas?.filter((f) => f.ativo) || [];
+  const ativos = bairros?.filter((b) => b.ativo) || [];
 
   return (
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <MapPin className="h-5 w-5" />
-          Mapa de Área de Entrega
+          Mapa de Bairros Atendidos
         </CardTitle>
         <CardDescription>
-          Visualização das faixas de entrega configuradas
+          Visualização dos bairros onde realizamos entregas
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -176,28 +191,17 @@ export const DeliveryMap = ({ config, faixas }: DeliveryMapProps) => {
                 </div>
               )}
             </div>
-            
-            {/* Legend */}
+
             <div className="mt-4 flex flex-wrap gap-2">
-              {activeFaixas
-                .sort((a, b) => a.distancia_min_km - b.distancia_min_km)
-                .map((faixa, index) => {
-                  const colorIndex = Math.min(index, TIER_COLORS.length - 1);
-                  return (
-                    <Badge
-                      key={faixa.id}
-                      variant="outline"
-                      className="flex items-center gap-2"
-                      style={{ borderColor: TIER_COLORS[colorIndex].stroke }}
-                    >
-                      <span
-                        className="w-3 h-3 rounded-full"
-                        style={{ backgroundColor: TIER_COLORS[colorIndex].stroke }}
-                      />
-                      {faixa.distancia_min_km}-{faixa.distancia_max_km} km: R$ {Number(faixa.taxa_entrega).toFixed(2)}
-                    </Badge>
-                  );
-                })}
+              {ativos.map((b) => (
+                <Badge key={b.id} variant="outline" className="flex items-center gap-2">
+                  <span className="w-2.5 h-2.5 rounded-full bg-green-500" />
+                  {b.nome}
+                </Badge>
+              ))}
+              {ativos.length === 0 && (
+                <p className="text-sm text-muted-foreground">Nenhum bairro ativo cadastrado.</p>
+              )}
             </div>
           </>
         )}
