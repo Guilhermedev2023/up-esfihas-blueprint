@@ -771,7 +771,7 @@ const Pagamento = () => {
                         <div className="rounded-lg border-2 border-primary/30 bg-primary/5 p-4 space-y-3">
                           <div className="flex items-center gap-2">
                             <QrCode className="h-5 w-5 text-primary" />
-                            <p className="font-semibold">Chave PIX (telefone)</p>
+                            <p className="font-semibold">Chave PIX (aleatória)</p>
                           </div>
                           <div className="flex items-center gap-2 rounded-md bg-background p-3 border">
                             <code className="flex-1 text-sm font-mono break-all">{PIX_KEY}</code>
