@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 import { Loader2, Pencil, Plus, Trash2, MapPin, Clock, DollarSign, Ruler, Map } from 'lucide-react';
 import { DeliveryMap } from './DeliveryMap';
+import AdminBairros from './AdminBairros';
 import {
   useFaixasEntrega,
   useCreateFaixaEntrega,
