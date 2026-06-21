@@ -94,7 +94,7 @@ const Admin = () => {
             <AdminProdutos />
           </TabsContent>
 
-          <TabsContent value="bairros">
+          <TabsContent value="entregas">
             <AdminEntregas />
           </TabsContent>
 
