@@ -337,6 +337,7 @@ const AdminEntregas = () => {
 
         <TabsContent value="mapa" className="space-y-4">
           <DeliveryMap config={config} faixas={faixas} />
+          <AdminBairros />
         </TabsContent>
 
         <TabsContent value="config" className="space-y-4">
