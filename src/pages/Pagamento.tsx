@@ -42,8 +42,8 @@ export interface ConfirmedAddress {
 type PaymentMethod = 'card_online' | 'entrega' | '';
 type EntregaSubMethod = 'pix' | 'dinheiro' | 'maquininha' | '';
 
-// Chave PIX do restaurante (pode ser movida para configuração futuramente)
-const PIX_KEY = '48991506966';
+// Chave PIX do restaurante (chave aleatória)
+const PIX_KEY = 'c733de54-f7bf-49de-8bc8-1ee68b52904c';
 const PIX_NOME = 'UP Esfihas Artesanais';
 
 const Pagamento = () => {
@@ -771,7 +771,7 @@ const Pagamento = () => {
                         <div className="rounded-lg border-2 border-primary/30 bg-primary/5 p-4 space-y-3">
                           <div className="flex items-center gap-2">
                             <QrCode className="h-5 w-5 text-primary" />
-                            <p className="font-semibold">Chave PIX (telefone)</p>
+                            <p className="font-semibold">Chave PIX (aleatória)</p>
                           </div>
                           <div className="flex items-center gap-2 rounded-md bg-background p-3 border">
                             <code className="flex-1 text-sm font-mono break-all">{PIX_KEY}</code>
