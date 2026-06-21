@@ -145,17 +145,6 @@ const AdminBairros = () => {
                     placeholder="Ex: Centro"
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="new-taxa">Taxa de Entrega (R$)</Label>
-                  <Input
-                    id="new-taxa"
-                    type="number"
-                    step="0.50"
-                    min="0"
-                    value={newBairroForm.taxa_entrega}
-                    onChange={(e) => setNewBairroForm(prev => ({ ...prev, taxa_entrega: parseFloat(e.target.value) || 0 }))}
-                  />
-                </div>
                 <div className="flex items-center justify-between">
                   <Label htmlFor="new-ativo">Ativar imediatamente</Label>
                   <Switch
@@ -201,9 +190,6 @@ const AdminBairros = () => {
                       {bairro.ativo ? 'Ativo' : 'Inativo'}
                     </Badge>
                   </div>
-                  <p className="text-sm font-semibold text-primary">
-                    Taxa: R$ {bairro.taxa_entrega.toFixed(2)}
-                  </p>
                 </div>
                 <div className="flex items-center gap-2">
                   <Switch
@@ -255,17 +241,6 @@ const AdminBairros = () => {
                 id="edit-nome"
                 value={editForm.nome}
                 onChange={(e) => setEditForm(prev => ({ ...prev, nome: e.target.value }))}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="edit-taxa">Taxa de Entrega (R$)</Label>
-              <Input
-                id="edit-taxa"
-                type="number"
-                step="0.50"
-                min="0"
-                value={editForm.taxa_entrega}
-                onChange={(e) => setEditForm(prev => ({ ...prev, taxa_entrega: parseFloat(e.target.value) || 0 }))}
               />
             </div>
             <div className="flex items-center justify-between">
