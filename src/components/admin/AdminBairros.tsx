@@ -243,17 +243,6 @@ const AdminBairros = () => {
                 onChange={(e) => setEditForm(prev => ({ ...prev, nome: e.target.value }))}
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="edit-taxa">Taxa de Entrega (R$)</Label>
-              <Input
-                id="edit-taxa"
-                type="number"
-                step="0.50"
-                min="0"
-                value={editForm.taxa_entrega}
-                onChange={(e) => setEditForm(prev => ({ ...prev, taxa_entrega: parseFloat(e.target.value) || 0 }))}
-              />
-            </div>
             <div className="flex items-center justify-between">
               <Label htmlFor="edit-ativo">Bairro ativo</Label>
               <Switch
