@@ -201,9 +201,6 @@ const AdminBairros = () => {
                       {bairro.ativo ? 'Ativo' : 'Inativo'}
                     </Badge>
                   </div>
-                  <p className="text-sm font-semibold text-primary">
-                    Taxa: R$ {bairro.taxa_entrega.toFixed(2)}
-                  </p>
                 </div>
                 <div className="flex items-center gap-2">
                   <Switch
