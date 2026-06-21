@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 import { Loader2, Pencil, Plus, Trash2, MapPin, Clock, DollarSign, Ruler, Map } from 'lucide-react';
 import { DeliveryMap } from './DeliveryMap';
+import AdminBairros from './AdminBairros';
 import {
   useFaixasEntrega,
   useCreateFaixaEntrega,
@@ -337,6 +338,7 @@ const AdminEntregas = () => {
 
         <TabsContent value="mapa" className="space-y-4">
           <DeliveryMap config={config} faixas={faixas} />
+          <AdminBairros />
         </TabsContent>
 
         <TabsContent value="config" className="space-y-4">

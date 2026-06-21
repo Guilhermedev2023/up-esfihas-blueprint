@@ -60,7 +60,7 @@ const Admin = () => {
               <Package className="h-4 w-4" />
               <span className="hidden sm:inline">Cardápio</span>
             </TabsTrigger>
-            <TabsTrigger value="bairros" className="flex items-center gap-2">
+            <TabsTrigger value="entregas" className="flex items-center gap-2">
               <MapPin className="h-4 w-4" />
               <span className="hidden sm:inline">Entregas</span>
             </TabsTrigger>
@@ -94,7 +94,7 @@ const Admin = () => {
             <AdminProdutos />
           </TabsContent>
 
-          <TabsContent value="bairros">
+          <TabsContent value="entregas">
             <AdminEntregas />
           </TabsContent>
 
