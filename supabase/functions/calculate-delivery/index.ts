@@ -115,10 +115,16 @@ serve(async (req) => {
     let addressToCache = address || `${lat},${lng}`;
 
     // Validate provided coordinates
-    if (lat && lng) {
+    if (lat !== undefined && lng !== undefined) {
       if (typeof lat !== 'number' || typeof lng !== 'number' || isNaN(lat) || isNaN(lng)) {
         return errorResponse(ERROR_CODES.ENDERECO_INVALIDO, "Coordenadas inválidas fornecidas");
       }
+      if (lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+        return errorResponse(ERROR_CODES.ENDERECO_INVALIDO, "Coordenadas fora do intervalo válido");
+      }
+    }
+    if (address !== undefined && (typeof address !== 'string' || address.length > 500)) {
+      return errorResponse(ERROR_CODES.ENDERECO_INVALIDO, "Endereço inválido");
     }
 
     // If coordinates not provided, geocode the address

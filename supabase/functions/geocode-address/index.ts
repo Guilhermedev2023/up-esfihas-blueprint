@@ -27,8 +27,11 @@ serve(async (req) => {
 
     const { address } = await req.json();
 
-    if (!address) {
-      throw new Error("Address is required");
+    if (!address || typeof address !== 'string' || address.trim().length < 5 || address.length > 500) {
+      return new Response(
+        JSON.stringify({ success: false, error: "Endereço inválido" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
     const GOOGLE_MAPS_API_KEY = Deno.env.get("GOOGLE_MAPS_API_KEY");
