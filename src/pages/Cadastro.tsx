@@ -97,13 +97,18 @@ const Cadastro = () => {
 
     setLoading(true);
 
-    const { data: existingPhone } = await supabase
-      .from('profiles')
-      .select('id')
-      .eq('telefone', formData.telefone.trim())
-      .limit(1);
+    const telefoneNormalizado = formData.telefone.trim();
+    const { data: telefoneDisponivel, error: telefoneError } = await supabase
+      .rpc('telefone_disponivel', { _telefone: telefoneNormalizado });
 
-    if (existingPhone && existingPhone.length > 0) {
+    if (telefoneError) {
+      console.error('Erro ao verificar telefone:', telefoneError);
+      toast.error('Não foi possível verificar o telefone. Tente novamente.');
+      setLoading(false);
+      return;
+    }
+
+    if (telefoneDisponivel === false) {
       toast.error('Este número de telefone já está cadastrado em outra conta.');
       setLoading(false);
       return;
@@ -115,7 +120,7 @@ const Cadastro = () => {
     const success = await register({
       nome: formData.nome,
       email: formData.email,
-      telefone: formData.telefone,
+      telefone: telefoneNormalizado,
       endereco,
       bairro: formData.bairro,
       senha: formData.senha
