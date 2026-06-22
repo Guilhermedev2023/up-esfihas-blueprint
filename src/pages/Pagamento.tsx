@@ -295,22 +295,25 @@ const Pagamento = () => {
       if (melhorDesconto?.cupomId) await marcarCupomUsado(melhorDesconto.cupomId);
       if (numPedidos === 0) await gerarCupomSegundoPedido();
 
-      const result = await salvarPedidoDB(confirmedAddress, recalcTaxa, recalcTotal, authUserId, 'pendente');
-      if (!result) {
-        setSalvandoPedido(false);
-        return;
-      }
-
       const metodoFinal =
         entregaSubMethod === 'pix' ? 'pix_entrega' :
         entregaSubMethod === 'dinheiro' ? 'dinheiro' :
         'maquininha';
 
-      await supabase.from('pedidos').update({
-        metodo_pagamento: metodoFinal,
-        troco: trocoNum,
-        observacao_pagamento: observacaoPagamento.trim() || null,
-      }).eq('id', result.id);
+      const result = await salvarPedidoDB(
+        confirmedAddress,
+        recalcTaxa,
+        recalcTotal,
+        authUserId,
+        'pendente',
+        metodoFinal,
+        trocoNum,
+        observacaoPagamento.trim() || null,
+      );
+      if (!result) {
+        setSalvandoPedido(false);
+        return;
+      }
 
       if (cupomGerado) toast.success(`🎉 Você ganhou o cupom ${cupomGerado} para seu próximo pedido!`, { duration: 10000 });
 
