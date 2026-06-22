@@ -88,6 +88,7 @@ const SOUND_PREF_KEY = 'admin-sound-enabled';
 const AdminPedidos = () => {
   const queryClient = useQueryClient();
   const [selectedPedido, setSelectedPedido] = useState<Pedido | null>(null);
+  const [errorDetailPedido, setErrorDetailPedido] = useState<Pedido | null>(null);
   const [alertActive, setAlertActive] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState<boolean>(() => {
     if (typeof window === 'undefined') return true;
