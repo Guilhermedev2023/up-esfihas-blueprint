@@ -98,21 +98,6 @@ const Cadastro = () => {
     setLoading(true);
 
     const telefoneNormalizado = formData.telefone.trim();
-    const { data: telefoneDisponivel, error: telefoneError } = await supabase
-      .rpc('telefone_disponivel', { _telefone: telefoneNormalizado });
-
-    if (telefoneError) {
-      console.error('Erro ao verificar telefone:', telefoneError);
-      toast.error('Não foi possível verificar o telefone. Tente novamente.');
-      setLoading(false);
-      return;
-    }
-
-    if (telefoneDisponivel === false) {
-      toast.error('Este número de telefone já está cadastrado em outra conta.');
-      setLoading(false);
-      return;
-    }
 
     // Build address string: "Rua, Número, Complemento"
     const endereco = [formData.rua.trim(), formData.numero.trim(), formData.complemento.trim()].filter(Boolean).join(', ');
