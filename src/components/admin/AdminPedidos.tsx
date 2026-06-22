@@ -493,49 +493,60 @@ const AdminPedidos = () => {
       </div>
 
       <Dialog open={!!selectedPedido} onOpenChange={() => setSelectedPedido(null)}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Pedido #{selectedPedido?.numero}</DialogTitle>
           </DialogHeader>
           {selectedPedido && (
             <div className="space-y-4">
+              {/* Cliente em destaque */}
+              <div className="rounded-lg border-2 border-primary/30 bg-primary/5 p-3">
+                <p className="text-xs text-muted-foreground uppercase tracking-wide">Cliente</p>
+                <p className="text-lg font-bold uppercase">{selectedPedido.cliente_nome || 'Não identificado'}</p>
+              </div>
+
+              {/* Observações */}
+              <div className="rounded-lg border bg-muted/40 p-3">
+                <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">📝 Observações</p>
+                <p className="text-sm whitespace-pre-wrap">
+                  {selectedPedido.observacao_pagamento?.trim()
+                    ? selectedPedido.observacao_pagamento
+                    : <span className="italic text-muted-foreground">Sem observações</span>}
+                </p>
+              </div>
+
+              {/* Pagamento */}
+              <div className="rounded-lg border-2 border-amber-300 bg-amber-50 dark:bg-amber-950/20 p-3 text-sm">
+                <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1 flex items-center gap-1">
+                  <CreditCard className="h-3 w-3" /> Forma de Pagamento
+                </p>
+                <p className="font-semibold text-base">
+                  {PAYMENT_LABELS[selectedPedido.metodo_pagamento] || selectedPedido.metodo_pagamento || 'Não informado'}
+                </p>
+                {selectedPedido.troco && (
+                  <p className="mt-1">
+                    <span className="font-semibold">💵 Troco para:</span> R$ {Number(selectedPedido.troco).toFixed(2)}
+                    <span className="ml-2 text-muted-foreground">
+                      (devolver R$ {(Number(selectedPedido.troco) - Number(selectedPedido.total)).toFixed(2)})
+                    </span>
+                  </p>
+                )}
+              </div>
+
               <div className="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <p className="text-muted-foreground">Data</p>
-                  <p className="font-medium">{formatDate(selectedPedido.created_at)} {formatTime(selectedPedido.created_at)}</p>
-                </div>
                 <div>
                   <p className="text-muted-foreground">Telefone</p>
                   <p className="font-medium">{selectedPedido.telefone}</p>
                 </div>
                 <div>
-                  <p className="text-muted-foreground">Pagamento</p>
-                  <p className="font-medium flex items-center gap-1">
-                    <CreditCard className="h-3 w-3" />
-                    {PAYMENT_LABELS[selectedPedido.metodo_pagamento] || selectedPedido.metodo_pagamento}
-                  </p>
-                </div>
-                <div>
                   <p className="text-muted-foreground">Status</p>
                   <Badge>{traduzirStatus(selectedPedido.status)}</Badge>
                 </div>
-              </div>
-
-              {(selectedPedido.troco || selectedPedido.observacao_pagamento) && (
-                <div className="rounded-lg border-2 border-amber-300 bg-amber-50 dark:bg-amber-950/20 p-3 text-sm space-y-1">
-                  {selectedPedido.troco && (
-                    <p>
-                      <span className="font-semibold">💵 Troco para:</span> R$ {Number(selectedPedido.troco).toFixed(2)}
-                      <span className="ml-2 text-muted-foreground">
-                        (devolver R$ {(Number(selectedPedido.troco) - Number(selectedPedido.total)).toFixed(2)})
-                      </span>
-                    </p>
-                  )}
-                  {selectedPedido.observacao_pagamento && (
-                    <p><span className="font-semibold">📝 Observação:</span> {selectedPedido.observacao_pagamento}</p>
-                  )}
+                <div className="col-span-2">
+                  <p className="text-muted-foreground">Data</p>
+                  <p className="font-medium">{formatDate(selectedPedido.created_at)} {formatTime(selectedPedido.created_at)}</p>
                 </div>
-              )}
+              </div>
 
               {selectedPedido.endereco && (
                 <div className="rounded-lg bg-muted p-3 text-sm space-y-1">
