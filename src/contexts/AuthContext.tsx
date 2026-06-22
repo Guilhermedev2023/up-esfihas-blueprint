@@ -146,6 +146,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (error) {
         if (error.message.includes('already registered')) {
           toast.error('Email já cadastrado');
+        } else if (error.message.includes('known to be weak') || error.message.includes('weak_password')) {
+          toast.error('Essa senha é muito comum. Escolha uma senha mais forte e única.');
         } else if (error.message.includes('Database error saving new user')) {
           toast.error('Não foi possível criar a conta. Verifique se o telefone já está cadastrado.');
         } else {
