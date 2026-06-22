@@ -418,16 +418,28 @@ const AdminPedidos = () => {
                         </div>
                       )}
                       {!pedido.goup_delivery_id && pedido.goup_status === 'error' && (
-                        <div className="flex items-center justify-between gap-1 text-[10px] font-semibold text-red-700 bg-red-100 dark:bg-red-900/30 px-2 py-1 rounded">
-                          <span title={pedido.goup_last_error || ''}>⚠️ Falha na designação</span>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="h-5 px-1 text-[10px] text-red-700 hover:bg-red-200"
-                            onClick={(e) => { e.stopPropagation(); dispatchToGoup(pedido); }}
-                          >
-                            Tentar novamente
-                          </Button>
+                        <div className="flex flex-col gap-1 text-[10px] font-semibold text-red-700 bg-red-100 dark:bg-red-900/30 px-2 py-1 rounded">
+                          <span className="truncate" title={pedido.goup_last_error || ''}>
+                            ❌ {pedido.goup_last_error?.slice(0, 60) || 'Erro ao criar entrega'}
+                          </span>
+                          <div className="flex gap-1">
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-5 px-1 text-[10px] text-red-700 hover:bg-red-200 flex-1"
+                              onClick={(e) => { e.stopPropagation(); setErrorDetailPedido(pedido); }}
+                            >
+                              Ver detalhes
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-5 px-1 text-[10px] text-red-700 hover:bg-red-200 flex-1"
+                              onClick={(e) => { e.stopPropagation(); dispatchToGoup(pedido); }}
+                            >
+                              Tentar novamente
+                            </Button>
+                          </div>
                         </div>
                       )}
                       {pedido.observacao_pagamento && (
