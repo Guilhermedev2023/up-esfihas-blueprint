@@ -569,7 +569,6 @@ export type Database = {
         Args: { target_user_email: string }
         Returns: undefined
       }
-      telefone_disponivel: { Args: { _telefone: string }; Returns: boolean }
       usar_cupom: { Args: { _cupom_id: string }; Returns: boolean }
     }
     Enums: {
