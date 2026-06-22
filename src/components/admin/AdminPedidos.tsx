@@ -591,6 +591,30 @@ const AdminPedidos = () => {
           )}
         </DialogContent>
       </Dialog>
+
+      <Dialog open={!!errorDetailPedido} onOpenChange={() => setErrorDetailPedido(null)}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Detalhes do erro · Pedido #{errorDetailPedido?.numero}</DialogTitle>
+          </DialogHeader>
+          {errorDetailPedido && (
+            <div className="space-y-3 text-sm">
+              <div className="rounded-md border border-red-300 bg-red-50 dark:bg-red-950/20 p-3">
+                <p className="text-xs uppercase text-red-700 font-semibold mb-1">Mensagem do servidor de entrega</p>
+                <pre className="whitespace-pre-wrap break-words text-xs font-mono">
+{errorDetailPedido.goup_last_error || 'Sem mensagem registrada'}
+                </pre>
+              </div>
+              <div className="text-xs text-muted-foreground">
+                Status: <span className="font-mono">{errorDetailPedido.goup_status || '—'}</span>
+              </div>
+              <Button onClick={() => { dispatchToGoup(errorDetailPedido); setErrorDetailPedido(null); }} className="w-full">
+                Tentar designar novamente
+              </Button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
