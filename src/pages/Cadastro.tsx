@@ -97,17 +97,7 @@ const Cadastro = () => {
 
     setLoading(true);
 
-    const { data: existingPhone } = await supabase
-      .from('profiles')
-      .select('id')
-      .eq('telefone', formData.telefone.trim())
-      .limit(1);
-
-    if (existingPhone && existingPhone.length > 0) {
-      toast.error('Este número de telefone já está cadastrado em outra conta.');
-      setLoading(false);
-      return;
-    }
+    const telefoneNormalizado = formData.telefone.trim();
 
     // Build address string: "Rua, Número, Complemento"
     const endereco = [formData.rua.trim(), formData.numero.trim(), formData.complemento.trim()].filter(Boolean).join(', ');
@@ -115,7 +105,7 @@ const Cadastro = () => {
     const success = await register({
       nome: formData.nome,
       email: formData.email,
-      telefone: formData.telefone,
+      telefone: telefoneNormalizado,
       endereco,
       bairro: formData.bairro,
       senha: formData.senha

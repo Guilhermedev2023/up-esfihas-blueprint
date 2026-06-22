@@ -135,6 +135,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           emailRedirectTo: window.location.origin,
           data: {
             nome: data.nome,
+            full_name: data.nome,
             telefone: data.telefone,
             endereco: data.endereco,
             bairro: data.bairro
@@ -145,17 +146,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (error) {
         if (error.message.includes('already registered')) {
           toast.error('Email já cadastrado');
+        } else if (error.message.includes('known to be weak') || error.message.includes('weak_password')) {
+          toast.error('Essa senha é muito comum. Escolha uma senha mais forte e única.');
+        } else if (error.message.includes('Database error saving new user')) {
+          toast.error('Não foi possível criar a conta. Verifique se o telefone já está cadastrado.');
         } else {
           toast.error('Erro ao cadastrar: ' + error.message);
         }
         return false;
       }
 
-      if (authData.user) {
+      if (authData.session?.user) {
+        setSession(authData.session);
         // Wait a moment for the trigger to create the profile
         await new Promise(resolve => setTimeout(resolve, 500));
-        const profile = await fetchProfile(authData.user.id);
+        const profile = await fetchProfile(authData.session.user.id);
         setUser(profile);
+        toast.success('Cadastro realizado com sucesso');
+        return true;
+      }
+
+      if (authData.user) {
         toast.success('Cadastro realizado com sucesso');
         return true;
       }
