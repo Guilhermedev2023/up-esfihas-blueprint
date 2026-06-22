@@ -348,14 +348,20 @@ const Pagamento = () => {
       if (melhorDesconto?.cupomId) await marcarCupomUsado(melhorDesconto.cupomId);
       if (numPedidos === 0) await gerarCupomSegundoPedido();
 
-      const result = await salvarPedidoDB(confirmedAddress, recalcTaxa, recalcTotal, authUserId, 'aguardando_pagamento');
+      const result = await salvarPedidoDB(
+        confirmedAddress,
+        recalcTaxa,
+        recalcTotal,
+        authUserId,
+        'aguardando_pagamento',
+        'card_online',
+      );
       if (!result) {
         setSalvandoPedido(false);
         setCreatingIntent(false);
         return;
       }
 
-      await supabase.from('pedidos').update({ metodo_pagamento: 'card_online' }).eq('id', result.id);
       setPedidoCriado(result);
 
       const { data, error } = await supabase.functions.invoke('create-payment-intent', {
