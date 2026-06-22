@@ -182,7 +182,10 @@ const Pagamento = () => {
     recalcTaxa: number,
     recalcTotal: number,
     authUserId: string,
-    status = 'pendente'
+    status = 'pendente',
+    metodoPagamento: string = 'pendente',
+    troco: number | null = null,
+    observacaoPagamentoArg: string | null = null,
   ): Promise<{ numero: number; id: string } | null> => {
     try {
       const numeroPedido = await gerarNumeroPedido();
@@ -202,7 +205,9 @@ const Pagamento = () => {
           distancia_km: address.distanciaKm ?? null,
           tempo_estimado_min: address.tempoEstimado ?? null,
         },
-        metodo_pagamento: 'pendente',
+        metodo_pagamento: metodoPagamento,
+        troco,
+        observacao_pagamento: observacaoPagamentoArg,
         status,
       };
 
@@ -290,22 +295,25 @@ const Pagamento = () => {
       if (melhorDesconto?.cupomId) await marcarCupomUsado(melhorDesconto.cupomId);
       if (numPedidos === 0) await gerarCupomSegundoPedido();
 
-      const result = await salvarPedidoDB(confirmedAddress, recalcTaxa, recalcTotal, authUserId, 'pendente');
-      if (!result) {
-        setSalvandoPedido(false);
-        return;
-      }
-
       const metodoFinal =
         entregaSubMethod === 'pix' ? 'pix_entrega' :
         entregaSubMethod === 'dinheiro' ? 'dinheiro' :
         'maquininha';
 
-      await supabase.from('pedidos').update({
-        metodo_pagamento: metodoFinal,
-        troco: trocoNum,
-        observacao_pagamento: observacaoPagamento.trim() || null,
-      }).eq('id', result.id);
+      const result = await salvarPedidoDB(
+        confirmedAddress,
+        recalcTaxa,
+        recalcTotal,
+        authUserId,
+        'pendente',
+        metodoFinal,
+        trocoNum,
+        observacaoPagamento.trim() || null,
+      );
+      if (!result) {
+        setSalvandoPedido(false);
+        return;
+      }
 
       if (cupomGerado) toast.success(`🎉 Você ganhou o cupom ${cupomGerado} para seu próximo pedido!`, { duration: 10000 });
 
@@ -340,14 +348,20 @@ const Pagamento = () => {
       if (melhorDesconto?.cupomId) await marcarCupomUsado(melhorDesconto.cupomId);
       if (numPedidos === 0) await gerarCupomSegundoPedido();
 
-      const result = await salvarPedidoDB(confirmedAddress, recalcTaxa, recalcTotal, authUserId, 'aguardando_pagamento');
+      const result = await salvarPedidoDB(
+        confirmedAddress,
+        recalcTaxa,
+        recalcTotal,
+        authUserId,
+        'aguardando_pagamento',
+        'card_online',
+      );
       if (!result) {
         setSalvandoPedido(false);
         setCreatingIntent(false);
         return;
       }
 
-      await supabase.from('pedidos').update({ metodo_pagamento: 'card_online' }).eq('id', result.id);
       setPedidoCriado(result);
 
       const { data, error } = await supabase.functions.invoke('create-payment-intent', {
