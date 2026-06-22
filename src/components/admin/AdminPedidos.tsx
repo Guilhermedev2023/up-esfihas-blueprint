@@ -88,6 +88,7 @@ const SOUND_PREF_KEY = 'admin-sound-enabled';
 const AdminPedidos = () => {
   const queryClient = useQueryClient();
   const [selectedPedido, setSelectedPedido] = useState<Pedido | null>(null);
+  const [errorDetailPedido, setErrorDetailPedido] = useState<Pedido | null>(null);
   const [alertActive, setAlertActive] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState<boolean>(() => {
     if (typeof window === 'undefined') return true;
@@ -275,16 +276,27 @@ const AdminPedidos = () => {
       const { data, error } = await supabase.functions.invoke('goup-create-delivery', {
         body: { pedido_id: pedido.id },
       });
-      if (error) throw error;
-      if (data?.ok) {
-        toast.success(`🛵 Pedido #${pedido.numero} enviado para o goup`);
+      if (error) {
+        // Extract real backend message when available
+        const ctx: any = (error as any).context;
+        let backendMsg = '';
+        try {
+          if (ctx?.body) {
+            const parsed = typeof ctx.body === 'string' ? JSON.parse(ctx.body) : ctx.body;
+            backendMsg = parsed?.error || parsed?.message || '';
+          }
+        } catch { /* ignore */ }
+        const finalMsg = backendMsg || error.message || 'Erro desconhecido';
+        toast.error(`❌ Não foi possível criar a entrega: ${finalMsg}`);
+      } else if (data?.ok) {
+        toast.success(`🛵 Pedido #${pedido.numero} enviado para o entregador`);
       } else {
-        toast.error(`Falha ao enviar para o goup: ${data?.error || 'erro desconhecido'}`);
+        toast.error(`❌ ${data?.error || 'Erro desconhecido ao designar entrega'}`);
       }
       queryClient.invalidateQueries({ queryKey: ['admin-pedidos'] });
     } catch (err: any) {
       console.error('[goup] erro ao enviar pedido', err);
-      toast.error('Não foi possível contatar o goup. O Kanban segue normalmente.');
+      toast.error(`❌ Erro interno: ${err?.message || 'não foi possível contatar o serviço de entrega'}`);
       queryClient.invalidateQueries({ queryKey: ['admin-pedidos'] });
     }
   }, [queryClient]);
@@ -406,16 +418,28 @@ const AdminPedidos = () => {
                         </div>
                       )}
                       {!pedido.goup_delivery_id && pedido.goup_status === 'error' && (
-                        <div className="flex items-center justify-between gap-1 text-[10px] font-semibold text-red-700 bg-red-100 dark:bg-red-900/30 px-2 py-1 rounded">
-                          <span title={pedido.goup_last_error || ''}>⚠️ Falha na designação</span>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="h-5 px-1 text-[10px] text-red-700 hover:bg-red-200"
-                            onClick={(e) => { e.stopPropagation(); dispatchToGoup(pedido); }}
-                          >
-                            Tentar novamente
-                          </Button>
+                        <div className="flex flex-col gap-1 text-[10px] font-semibold text-red-700 bg-red-100 dark:bg-red-900/30 px-2 py-1 rounded">
+                          <span className="truncate" title={pedido.goup_last_error || ''}>
+                            ❌ {pedido.goup_last_error?.slice(0, 60) || 'Erro ao criar entrega'}
+                          </span>
+                          <div className="flex gap-1">
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-5 px-1 text-[10px] text-red-700 hover:bg-red-200 flex-1"
+                              onClick={(e) => { e.stopPropagation(); setErrorDetailPedido(pedido); }}
+                            >
+                              Ver detalhes
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-5 px-1 text-[10px] text-red-700 hover:bg-red-200 flex-1"
+                              onClick={(e) => { e.stopPropagation(); dispatchToGoup(pedido); }}
+                            >
+                              Tentar novamente
+                            </Button>
+                          </div>
                         </div>
                       )}
                       {pedido.observacao_pagamento && (
@@ -469,49 +493,60 @@ const AdminPedidos = () => {
       </div>
 
       <Dialog open={!!selectedPedido} onOpenChange={() => setSelectedPedido(null)}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Pedido #{selectedPedido?.numero}</DialogTitle>
           </DialogHeader>
           {selectedPedido && (
             <div className="space-y-4">
+              {/* Cliente em destaque */}
+              <div className="rounded-lg border-2 border-primary/30 bg-primary/5 p-3">
+                <p className="text-xs text-muted-foreground uppercase tracking-wide">Cliente</p>
+                <p className="text-lg font-bold uppercase">{selectedPedido.cliente_nome || 'Não identificado'}</p>
+              </div>
+
+              {/* Observações */}
+              <div className="rounded-lg border bg-muted/40 p-3">
+                <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">📝 Observações</p>
+                <p className="text-sm whitespace-pre-wrap">
+                  {selectedPedido.observacao_pagamento?.trim()
+                    ? selectedPedido.observacao_pagamento
+                    : <span className="italic text-muted-foreground">Sem observações</span>}
+                </p>
+              </div>
+
+              {/* Pagamento */}
+              <div className="rounded-lg border-2 border-amber-300 bg-amber-50 dark:bg-amber-950/20 p-3 text-sm">
+                <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1 flex items-center gap-1">
+                  <CreditCard className="h-3 w-3" /> Forma de Pagamento
+                </p>
+                <p className="font-semibold text-base">
+                  {PAYMENT_LABELS[selectedPedido.metodo_pagamento] || selectedPedido.metodo_pagamento || 'Não informado'}
+                </p>
+                {selectedPedido.troco && (
+                  <p className="mt-1">
+                    <span className="font-semibold">💵 Troco para:</span> R$ {Number(selectedPedido.troco).toFixed(2)}
+                    <span className="ml-2 text-muted-foreground">
+                      (devolver R$ {(Number(selectedPedido.troco) - Number(selectedPedido.total)).toFixed(2)})
+                    </span>
+                  </p>
+                )}
+              </div>
+
               <div className="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <p className="text-muted-foreground">Data</p>
-                  <p className="font-medium">{formatDate(selectedPedido.created_at)} {formatTime(selectedPedido.created_at)}</p>
-                </div>
                 <div>
                   <p className="text-muted-foreground">Telefone</p>
                   <p className="font-medium">{selectedPedido.telefone}</p>
                 </div>
                 <div>
-                  <p className="text-muted-foreground">Pagamento</p>
-                  <p className="font-medium flex items-center gap-1">
-                    <CreditCard className="h-3 w-3" />
-                    {PAYMENT_LABELS[selectedPedido.metodo_pagamento] || selectedPedido.metodo_pagamento}
-                  </p>
-                </div>
-                <div>
                   <p className="text-muted-foreground">Status</p>
                   <Badge>{traduzirStatus(selectedPedido.status)}</Badge>
                 </div>
-              </div>
-
-              {(selectedPedido.troco || selectedPedido.observacao_pagamento) && (
-                <div className="rounded-lg border-2 border-amber-300 bg-amber-50 dark:bg-amber-950/20 p-3 text-sm space-y-1">
-                  {selectedPedido.troco && (
-                    <p>
-                      <span className="font-semibold">💵 Troco para:</span> R$ {Number(selectedPedido.troco).toFixed(2)}
-                      <span className="ml-2 text-muted-foreground">
-                        (devolver R$ {(Number(selectedPedido.troco) - Number(selectedPedido.total)).toFixed(2)})
-                      </span>
-                    </p>
-                  )}
-                  {selectedPedido.observacao_pagamento && (
-                    <p><span className="font-semibold">📝 Observação:</span> {selectedPedido.observacao_pagamento}</p>
-                  )}
+                <div className="col-span-2">
+                  <p className="text-muted-foreground">Data</p>
+                  <p className="font-medium">{formatDate(selectedPedido.created_at)} {formatTime(selectedPedido.created_at)}</p>
                 </div>
-              )}
+              </div>
 
               {selectedPedido.endereco && (
                 <div className="rounded-lg bg-muted p-3 text-sm space-y-1">
@@ -552,6 +587,30 @@ const AdminPedidos = () => {
                   <span className="text-primary">R$ {Number(selectedPedido.total).toFixed(2)}</span>
                 </div>
               </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!errorDetailPedido} onOpenChange={() => setErrorDetailPedido(null)}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Detalhes do erro · Pedido #{errorDetailPedido?.numero}</DialogTitle>
+          </DialogHeader>
+          {errorDetailPedido && (
+            <div className="space-y-3 text-sm">
+              <div className="rounded-md border border-red-300 bg-red-50 dark:bg-red-950/20 p-3">
+                <p className="text-xs uppercase text-red-700 font-semibold mb-1">Mensagem do servidor de entrega</p>
+                <pre className="whitespace-pre-wrap break-words text-xs font-mono">
+{errorDetailPedido.goup_last_error || 'Sem mensagem registrada'}
+                </pre>
+              </div>
+              <div className="text-xs text-muted-foreground">
+                Status: <span className="font-mono">{errorDetailPedido.goup_status || '—'}</span>
+              </div>
+              <Button onClick={() => { dispatchToGoup(errorDetailPedido); setErrorDetailPedido(null); }} className="w-full">
+                Tentar designar novamente
+              </Button>
             </div>
           )}
         </DialogContent>
