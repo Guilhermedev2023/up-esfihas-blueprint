@@ -276,16 +276,27 @@ const AdminPedidos = () => {
       const { data, error } = await supabase.functions.invoke('goup-create-delivery', {
         body: { pedido_id: pedido.id },
       });
-      if (error) throw error;
-      if (data?.ok) {
-        toast.success(`🛵 Pedido #${pedido.numero} enviado para o goup`);
+      if (error) {
+        // Extract real backend message when available
+        const ctx: any = (error as any).context;
+        let backendMsg = '';
+        try {
+          if (ctx?.body) {
+            const parsed = typeof ctx.body === 'string' ? JSON.parse(ctx.body) : ctx.body;
+            backendMsg = parsed?.error || parsed?.message || '';
+          }
+        } catch { /* ignore */ }
+        const finalMsg = backendMsg || error.message || 'Erro desconhecido';
+        toast.error(`❌ Não foi possível criar a entrega: ${finalMsg}`);
+      } else if (data?.ok) {
+        toast.success(`🛵 Pedido #${pedido.numero} enviado para o entregador`);
       } else {
-        toast.error(`Falha ao enviar para o goup: ${data?.error || 'erro desconhecido'}`);
+        toast.error(`❌ ${data?.error || 'Erro desconhecido ao designar entrega'}`);
       }
       queryClient.invalidateQueries({ queryKey: ['admin-pedidos'] });
     } catch (err: any) {
       console.error('[goup] erro ao enviar pedido', err);
-      toast.error('Não foi possível contatar o goup. O Kanban segue normalmente.');
+      toast.error(`❌ Erro interno: ${err?.message || 'não foi possível contatar o serviço de entrega'}`);
       queryClient.invalidateQueries({ queryKey: ['admin-pedidos'] });
     }
   }, [queryClient]);
