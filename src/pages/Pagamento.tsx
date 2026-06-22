@@ -182,7 +182,10 @@ const Pagamento = () => {
     recalcTaxa: number,
     recalcTotal: number,
     authUserId: string,
-    status = 'pendente'
+    status = 'pendente',
+    metodoPagamento: string = 'pendente',
+    troco: number | null = null,
+    observacaoPagamentoArg: string | null = null,
   ): Promise<{ numero: number; id: string } | null> => {
     try {
       const numeroPedido = await gerarNumeroPedido();
@@ -202,7 +205,9 @@ const Pagamento = () => {
           distancia_km: address.distanciaKm ?? null,
           tempo_estimado_min: address.tempoEstimado ?? null,
         },
-        metodo_pagamento: 'pendente',
+        metodo_pagamento: metodoPagamento,
+        troco,
+        observacao_pagamento: observacaoPagamentoArg,
         status,
       };
 
