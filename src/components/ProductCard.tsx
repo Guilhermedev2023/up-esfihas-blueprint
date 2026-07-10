@@ -121,6 +121,10 @@ export const ProductCard = ({ product, expandedId, onExpand }: ProductCardProps)
         <img
           src={product.imagem}
           alt={product.nome}
+          loading="lazy"
+          decoding="async"
+          width={96}
+          height={96}
           className="h-24 w-24 rounded-lg object-cover"
         />
         
