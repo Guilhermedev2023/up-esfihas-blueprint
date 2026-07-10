@@ -64,33 +64,52 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     // Set up auth state listener BEFORE checking session
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, currentSession) => {
+      (event, currentSession) => {
         setSession(currentSession);
-        
-        if (currentSession?.user) {
-          // Use setTimeout to avoid potential race conditions with Supabase
-          setTimeout(async () => {
-            const profile = await fetchProfile(currentSession.user.id);
-            setUser(profile);
-            setLoading(false);
-          }, 0);
-        } else {
+
+        if (event === 'SIGNED_OUT' || !currentSession?.user) {
           setUser(null);
           setLoading(false);
+          return;
         }
+
+        // Defer profile fetch to avoid deadlocks inside the auth callback
+        setTimeout(async () => {
+          try {
+            const profile = await fetchProfile(currentSession.user.id);
+            setUser(profile);
+          } catch (err) {
+            console.error('Profile fetch failed:', err);
+          } finally {
+            setLoading(false);
+          }
+        }, 0);
       }
     );
 
-    // Check for existing session
-    supabase.auth.getSession().then(async ({ data: { session: existingSession } }) => {
-      setSession(existingSession);
-      
-      if (existingSession?.user) {
-        const profile = await fetchProfile(existingSession.user.id);
-        setUser(profile);
+    // Check for existing session — resilient to corrupted/expired refresh tokens
+    (async () => {
+      try {
+        const { data, error } = await supabase.auth.getSession();
+        if (error) throw error;
+        const existingSession = data.session;
+        setSession(existingSession);
+        if (existingSession?.user) {
+          const profile = await fetchProfile(existingSession.user.id);
+          setUser(profile);
+        }
+      } catch (err: any) {
+        const msg = String(err?.message || err);
+        console.warn('Session recovery failed, clearing local session:', msg);
+        if (msg.includes('Refresh Token') || msg.includes('refresh_token') || msg.includes('Invalid')) {
+          try { await supabase.auth.signOut({ scope: 'local' }); } catch {}
+        }
+        setSession(null);
+        setUser(null);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
-    });
+    })();
 
     return () => subscription.unsubscribe();
   }, []);

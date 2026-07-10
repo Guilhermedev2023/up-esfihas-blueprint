@@ -26,6 +26,9 @@ export const HeroSlider = () => {
           <img
             src={image}
             alt="Esfiha artesanal"
+            loading={index === 0 ? 'eager' : 'lazy'}
+            {...({ fetchpriority: index === 0 ? 'high' : 'auto' } as any)}
+            decoding="async"
             className="h-full w-full object-cover blur-sm scale-110"
           />
         </div>
