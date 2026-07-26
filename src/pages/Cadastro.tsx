@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -28,6 +28,10 @@ const Cadastro = () => {
   const [loading, setLoading] = useState(false);
   const { register } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const nextParam = searchParams.get('next');
+  const next = nextParam && nextParam.startsWith('/') && !nextParam.startsWith('//') ? nextParam : null;
+
 
   useEffect(() => {
     const fetchBairros = async () => {
@@ -114,8 +118,13 @@ const Cadastro = () => {
     setLoading(false);
 
     if (success) {
-      navigate('/home');
+      if (next) {
+        window.location.href = next;
+      } else {
+        navigate('/home');
+      }
     }
+
   };
 
   return (
