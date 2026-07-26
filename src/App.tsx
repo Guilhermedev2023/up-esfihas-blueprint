@@ -21,6 +21,8 @@ const Perfil = lazy(() => import("./pages/Perfil"));
 const AdminLogin = lazy(() => import("./pages/AdminLogin"));
 const Admin = lazy(() => import("./pages/Admin"));
 const AdminRoute = lazy(() => import("./components/AdminRoute"));
+const OAuthConsent = lazy(() => import("./pages/OAuthConsent"));
+
 
 const queryClient = new QueryClient();
 
@@ -54,7 +56,9 @@ const App = () => (
                 <Route path="/endereco" element={<Navigate to="/pagamento" replace />} />
                 <Route path="/admin/login" element={<AdminLogin />} />
                 <Route path="/admin" element={<AdminRoute><Admin /></AdminRoute>} />
+                <Route path="/.lovable/oauth/consent" element={<OAuthConsent />} />
                 <Route path="/~oauth/*" element={<Navigate to="/home" replace />} />
+
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </Suspense>
