@@ -1,0 +1,130 @@
+{
+  "version": 1,
+  "sdk_version": "0.24.0",
+  "path": "/functions/v1/mcp",
+  "auth": {
+    "type": "oauth",
+    "issuer": "https://yjhrlkwselsqymewpdgc.supabase.co/auth/v1",
+    "accepted_audiences": [
+      "authenticated"
+    ]
+  },
+  "mcp": {
+    "server": {
+      "name": "up-esfihas-mcp",
+      "version": "0.1.0",
+      "title": "UP Esfihas Artesanais"
+    },
+    "tools": [
+      {
+        "name": "list_menu",
+        "title": "Listar cardápio",
+        "description": "Lista os produtos ativos do cardápio da UP Esfihas Artesanais (nome, categoria, descrição e preço). Opcionalmente filtra por categoria ou por texto de busca.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "categoria": {
+              "type": "string",
+              "description": "Filtra por categoria exata, ex: 'Esfihas Salgadas'."
+            },
+            "busca": {
+              "type": "string",
+              "description": "Texto para buscar no nome do produto."
+            }
+          },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_delivery_areas",
+        "title": "Listar bairros atendidos",
+        "description": "Lista os bairros ativos onde a UP Esfihas Artesanais faz entrega em Florianópolis. A taxa de entrega é calculada por distância no checkout.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {}
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "get_store_status",
+        "title": "Status da loja",
+        "description": "Retorna o horário de funcionamento configurado da loja: dias abertos, hora de abertura, hora de fechamento e eventual override manual (aberto/fechado forçado).",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {}
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_my_orders",
+        "title": "Meus pedidos",
+        "description": "Lista os pedidos do usuário autenticado, do mais recente para o mais antigo, com número, status, total, forma de pagamento e itens.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "limite": {
+              "type": "integer",
+              "description": "Quantidade máxima de pedidos a retornar (padrão 10)."
+            },
+            "status": {
+              "type": "string",
+              "description": "Filtra por status: pendente, aceito, preparo, saiu_entrega, finalizado, cancelado, aguardando_pagamento."
+            }
+          },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "get_order",
+        "title": "Detalhes do pedido",
+        "description": "Retorna os detalhes completos de um pedido do usuário autenticado, buscando pelo número do pedido.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "numero": {
+              "type": "integer",
+              "description": "Número sequencial do pedido."
+            }
+          },
+          "required": [
+            "numero"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      }
+    ]
+  }
+}

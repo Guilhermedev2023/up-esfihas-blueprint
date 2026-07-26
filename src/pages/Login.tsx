@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,12 +7,18 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2 } from 'lucide-react';
 
+// Only same-origin relative paths are accepted as a post-login destination.
+const safeNext = (value: string | null) =>
+  value && value.startsWith('/') && !value.startsWith('//') ? value : null;
+
 const Login = () => {
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
+  const [params] = useSearchParams();
+  const next = safeNext(params.get('next'));
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -23,9 +29,14 @@ const Login = () => {
     setIsLoading(false);
     
     if (success) {
-      navigate('/home');
+      if (next) {
+        window.location.href = next;
+      } else {
+        navigate('/home');
+      }
     }
   };
+
 
   return (
     <div className="flex min-h-screen items-center justify-center p-4">
@@ -73,7 +84,10 @@ const Login = () => {
               )}
             </Button>
             <div className="text-center">
-              <Link to="/cadastro" className="text-sm text-primary hover:underline">
+              <Link
+                to={next ? `/cadastro?next=${encodeURIComponent(next)}` : '/cadastro'}
+                className="text-sm text-primary hover:underline"
+              >
                 Criar conta
               </Link>
             </div>
