@@ -84,7 +84,10 @@ const Login = () => {
               )}
             </Button>
             <div className="text-center">
-              <Link to="/cadastro" className="text-sm text-primary hover:underline">
+              <Link
+                to={next ? `/cadastro?next=${encodeURIComponent(next)}` : '/cadastro'}
+                className="text-sm text-primary hover:underline"
+              >
                 Criar conta
               </Link>
             </div>
