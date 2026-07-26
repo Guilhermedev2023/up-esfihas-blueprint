@@ -1,6 +1,11 @@
 import { createClient } from "@supabase/supabase-js";
 import type { ToolContext } from "@lovable.dev/mcp-js";
 
+// This module only runs inside the generated Deno edge function, where `process.env`
+// is available. Declared locally so the Vite/browser typecheck stays clean.
+declare const process: { env: Record<string, string | undefined> };
+
+
 /**
  * Supabase client scoped to the signed-in MCP user.
  * The verified bearer token is forwarded so RLS runs as that user.
