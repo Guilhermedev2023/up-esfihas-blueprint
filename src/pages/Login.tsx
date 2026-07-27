@@ -83,12 +83,18 @@ const Login = () => {
                 'Entrar'
               )}
             </Button>
-            <div className="text-center">
+            <div className="flex flex-col items-center gap-2 text-center">
               <Link
                 to={next ? `/cadastro?next=${encodeURIComponent(next)}` : '/cadastro'}
                 className="text-sm text-primary hover:underline"
               >
                 Criar conta
+              </Link>
+              <Link
+                to="/recuperar-senha"
+                className="text-sm text-muted-foreground hover:text-primary hover:underline"
+              >
+                Esqueci minha senha
               </Link>
             </div>
           </form>

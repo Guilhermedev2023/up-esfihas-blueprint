@@ -22,6 +22,8 @@ const AdminLogin = lazy(() => import("./pages/AdminLogin"));
 const Admin = lazy(() => import("./pages/Admin"));
 const AdminRoute = lazy(() => import("./components/AdminRoute"));
 const OAuthConsent = lazy(() => import("./pages/OAuthConsent"));
+const RecuperarSenha = lazy(() => import("./pages/RecuperarSenha"));
+const RedefinirSenha = lazy(() => import("./pages/RedefinirSenha"));
 
 
 const queryClient = new QueryClient();
@@ -45,6 +47,8 @@ const App = () => (
                 <Route path="/" element={<Navigate to="/home" replace />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/cadastro" element={<Cadastro />} />
+                <Route path="/recuperar-senha" element={<RecuperarSenha />} />
+                <Route path="/redefinir-senha" element={<RedefinirSenha />} />
                 <Route path="/home" element={<Home />} />
                 <Route path="/produto/:id" element={<Produto />} />
                 <Route path="/carrinho" element={<Carrinho />} />
