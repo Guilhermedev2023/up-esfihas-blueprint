@@ -1,20 +1,36 @@
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 import { useBannerAtivo } from '@/hooks/useBannerPromocional';
-import { useProdutos } from '@/hooks/useProdutos';
+import type { Produto } from '@/hooks/useProdutos';
 import { useCart } from '@/contexts/CartContext';
 import { toast } from 'sonner';
 import { useState } from 'react';
 
 export const PromoBanner = () => {
   const banner = useBannerAtivo();
-  const { data: produtos } = useProdutos(false);
+  // Busca o produto pelo id, sem depender do cardápio: combos da promoção do dia
+  // costumam ficar desativados no cardápio e só são vendidos pelo banner.
+  const { data: produto, isLoading: loadingProduto } = useQuery({
+    queryKey: ['produto-banner', banner?.produto_id],
+    enabled: !!banner?.produto_id,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('produtos')
+        .select('*')
+        .eq('id', banner!.produto_id!)
+        .maybeSingle();
+      if (error) throw error;
+      return data as Produto | null;
+    },
+    staleTime: 60000,
+  });
   const { addToCart } = useCart();
   const [isPressed, setIsPressed] = useState(false);
 
   if (!banner?.imagem_url) return null;
 
-  const produto = banner.produto_id ? produtos?.find((p) => p.id === banner.produto_id) : undefined;
-  // Banner com produto vinculado só aparece quando o produto está disponível.
-  if (banner.produto_id && !produto) return null;
+  // Banner com produto vinculado só aparece quando o produto pode ser comprado.
+  if (banner.produto_id && (loadingProduto || !produto)) return null;
 
   const image = (
     <img
@@ -26,7 +42,7 @@ export const PromoBanner = () => {
   );
 
   // key = id: ao trocar de banner pela agenda, o novo entra com fade suave.
-  if (!produto) {
+  if (!banner.produto_id || !produto) {
     return (
       <div key={banner.id} className="container mx-auto px-2 sm:px-4 pt-3 animate-in fade-in duration-300">
         <div className="relative w-full overflow-hidden rounded-xl shadow-md">{image}</div>
