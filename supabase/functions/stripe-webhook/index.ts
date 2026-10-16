@@ -55,6 +55,30 @@ serve(async (req) => {
         .eq("id", pedidoId);
 
       console.log(`Pedido ${pedidoId} pagamento confirmado`);
+
+      // Meta Conversions API: server Purchase (deduplicated with the browser Pixel by event_id = pedido id)
+      try {
+        const md = paymentIntent.metadata ?? {};
+        const res = await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/meta-capi`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+          },
+          body: JSON.stringify({
+            action: "purchase_server",
+            pedido_id: pedidoId,
+            fbp: md.meta_fbp || null,
+            fbc: md.meta_fbc || null,
+            user_agent: md.meta_ua || null,
+            client_ip: md.meta_ip || null,
+            event_source_url: md.meta_url || null,
+          }),
+        });
+        console.log(`Meta CAPI Purchase pedido ${pedidoId}: ${res.status}`);
+      } catch (err) {
+        console.error("Meta CAPI Purchase falhou:", err);
+      }
     }
   }
 

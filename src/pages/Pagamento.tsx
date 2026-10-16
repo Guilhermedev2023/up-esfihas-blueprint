@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Elements } from '@stripe/react-stripe-js';
 import { loadStripe } from '@stripe/stripe-js';
@@ -25,6 +25,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { calculateDeliveryFee, DeliveryCalculation } from '@/hooks/useDeliveryConfig';
 import StripeCheckoutForm from '@/components/StripeCheckoutForm';
 import { useConfiguracaoPagamento } from '@/hooks/useConfiguracaoPagamento';
+import {
+  buildProductParams, trackMetaEvent, trackPurchaseBrowser, sendPurchaseToServer, getTrackingContext,
+} from '@/lib/metaPixel';
 
 type CheckoutStep = 'address' | 'payment';
 
@@ -116,6 +119,21 @@ const Pagamento = () => {
     if (metodoPagamento === 'card_online' && !clientSecret && !creatingIntent && confirmedAddress && user) {
       handlePagarOnline();
     }
+  }, [metodoPagamento]);
+
+  // Meta: InitiateCheckout once per checkout visit, AddPaymentInfo on first payment method choice
+  const checkoutTracked = useRef(false);
+  useEffect(() => {
+    if (checkoutTracked.current || items.length === 0 || !user) return;
+    checkoutTracked.current = true;
+    trackMetaEvent('InitiateCheckout', buildProductParams(items));
+  }, [items, user]);
+
+  const paymentInfoTracked = useRef(false);
+  useEffect(() => {
+    if (paymentInfoTracked.current || !metodoPagamento || items.length === 0) return;
+    paymentInfoTracked.current = true;
+    trackMetaEvent('AddPaymentInfo', { ...buildProductParams(items, totalFinal), payment_type: metodoPagamento });
   }, [metodoPagamento]);
 
   // Redirect if no items or not logged in
@@ -315,6 +333,10 @@ const Pagamento = () => {
         return;
       }
 
+      // Meta Purchase: browser (event_id = order id) + server copy built from the saved order
+      trackPurchaseBrowser({ ...result, total: recalcTotal }, items);
+      sendPurchaseToServer(result.id);
+
       if (cupomGerado) toast.success(`🎉 Você ganhou o cupom ${cupomGerado} para seu próximo pedido!`, { duration: 10000 });
 
       toast.success('Pedido confirmado! Acompanhe o status na aba Pedidos.');
@@ -365,7 +387,8 @@ const Pagamento = () => {
       setPedidoCriado(result);
 
       const { data, error } = await supabase.functions.invoke('create-payment-intent', {
-        body: { pedido_id: result.id, amount: Math.round(recalcTotal * 100) },
+        // meta_context lets the Stripe webhook send the server Purchase with the buyer's browser ids
+        body: { pedido_id: result.id, amount: Math.round(recalcTotal * 100), meta_context: getTrackingContext() },
       });
       if (error) throw error;
       setClientSecret(data.clientSecret);
@@ -381,6 +404,8 @@ const Pagamento = () => {
   };
 
   const handleStripeSuccess = () => {
+    // Server Purchase is sent by stripe-webhook (same event_id = order id)
+    if (pedidoCriado) trackPurchaseBrowser({ ...pedidoCriado, total: totalFinal }, items);
     if (cupomGerado) toast.success(`🎉 Você ganhou o cupom ${cupomGerado} para seu próximo pedido!`, { duration: 10000 });
     toast.success('Pagamento realizado com sucesso!');
     localStorage.setItem('pedido_enviado_sucesso', 'true');

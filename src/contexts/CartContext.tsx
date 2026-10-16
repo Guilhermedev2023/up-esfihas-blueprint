@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { Product } from '@/data/products';
 import { Produto } from '@/hooks/useProdutos';
+import { buildProductParams, trackMetaEvent } from '@/lib/metaPixel';
 
 // Accept both Product (static) and Produto (from database)
 type ProductType = Product | Produto;
@@ -46,6 +47,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [items]);
 
   const addToCart = (product: ProductType) => {
+    trackMetaEvent('AddToCart', buildProductParams([{ ...product, quantidade: 1 }]));
     setItems(currentItems => {
       const existingItem = currentItems.find(item => item.id === product.id);
       
@@ -80,6 +82,11 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (quantidade <= 0) {
       removeFromCart(productId);
       return;
+    }
+
+    const current = items.find(item => item.id === productId);
+    if (current && quantidade > current.quantidade) {
+      trackMetaEvent('AddToCart', buildProductParams([{ ...current, quantidade: quantidade - current.quantidade }]));
     }
 
     setItems(currentItems =>

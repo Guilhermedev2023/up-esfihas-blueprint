@@ -4,6 +4,22 @@
     <meta name="facebook-domain-verification" content="qldp0kddcs08yik5d630enha571wo4" />
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!-- "/" vira "/home" antes do Pixel carregar: a primeira visita conta um PageView só (mantém ?fbclid e ?utm_) -->
+    <script>
+      if (location.pathname === '/') history.replaceState(null, '', '/home' + location.search + location.hash);
+    </script>
+    <!-- Meta Pixel. Trocas de página do SPA são registradas pelo próprio Pixel (history API). Eventos de produto e Purchase saem de src/lib/metaPixel.ts, deduplicados com a Conversions API -->
+    <script>
+      !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+      n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;
+      n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;
+      t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,
+      document,'script','https://connect.facebook.net/en_US/fbevents.js');
+      fbq('init', '1612722576989130');
+      fbq('track', 'PageView');
+    </script>
+    <!-- End Meta Pixel -->
     <title>UP Esfihas Artesanais | Delivery de Esfihas no Norte da Ilha – Florianópolis</title>
     <meta name="description" content="As melhores Esfihas Artesanais do Norte da Ilha! Esfihas salgadas e doces, combos especiais e delivery rápido em Florianópolis. Peça agora pelo WhatsApp!">
     <meta name="author" content="UP Esfihas Artesanais" />
@@ -110,6 +126,7 @@
 </head>
 
   <body>
+    <noscript><img height="1" width="1" style="display:none" src="https://www.facebook.com/tr?id=1612722576989130&amp;ev=PageView&amp;noscript=1" alt="" /></noscript>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

@@ -25,7 +25,7 @@ serve(async (req) => {
     const user = userData.user;
     if (!user) throw new Error("Usuário não autenticado");
 
-    const { pedido_id, amount } = await req.json();
+    const { pedido_id, amount, meta_context } = await req.json();
     if (!pedido_id || !amount) throw new Error("pedido_id e amount são obrigatórios");
 
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
@@ -48,7 +48,15 @@ serve(async (req) => {
       amount: Math.round(amount), // amount in cents
       currency: "brl",
       customer: customerId,
-      metadata: { pedido_id },
+      metadata: {
+        pedido_id,
+        // Used by stripe-webhook to send the Meta Conversions API Purchase (Stripe limits values to 500 chars)
+        meta_fbp: String(meta_context?.fbp ?? "").slice(0, 500),
+        meta_fbc: String(meta_context?.fbc ?? "").slice(0, 500),
+        meta_ua: String(meta_context?.user_agent ?? req.headers.get("user-agent") ?? "").slice(0, 500),
+        meta_ip: (req.headers.get("cf-connecting-ip") ?? req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "").slice(0, 100),
+        meta_url: String(meta_context?.event_source_url ?? "").slice(0, 500),
+      },
       automatic_payment_methods: { enabled: true },
     });
 

@@ -6,6 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { toast } from 'sonner';
+import { buildProductParams, trackMetaEvent } from '@/lib/metaPixel';
 import { Plus, Minus, ChevronDown, ChevronUp } from 'lucide-react';
 
 // Accept both Product (static) and Produto (from database)
@@ -67,6 +68,7 @@ export const ProductCard = ({ product, expandedId, onExpand }: ProductCardProps)
 
   const handleCardClick = () => {
     if (!isMobile) return;
+    if (!isExpanded) trackMetaEvent('ViewContent', buildProductParams([product]));
     
     if (onExpand) {
       // Controlled mode: toggle between this product and null

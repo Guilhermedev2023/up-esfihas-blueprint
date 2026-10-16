@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Header } from '@/components/Header';
 import { Button } from '@/components/ui/button';
@@ -6,6 +7,8 @@ import { useCart } from '@/contexts/CartContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
+import { useProdutos } from '@/hooks/useProdutos';
+import { buildProductParams, trackMetaEvent } from '@/lib/metaPixel';
 
 const Produto = () => {
   const { id } = useParams();
@@ -13,7 +16,26 @@ const Produto = () => {
   const { addToCart } = useCart();
   const { isAuthenticated } = useAuth();
 
-  const product = products.find(p => p.id === id);
+  // Products come from the database (ids match the Meta catalog / content_ids); static list is a fallback
+  const { data: produtosDb = [], isLoading } = useProdutos();
+  const catalog = produtosDb.length > 0 ? produtosDb : products;
+  const product = catalog.find(p => p.id === id);
+
+  const viewedId = useRef<string | null>(null);
+  useEffect(() => {
+    if (product && viewedId.current !== product.id) {
+      viewedId.current = product.id;
+      trackMetaEvent('ViewContent', buildProductParams([product]));
+    }
+  }, [product]);
+
+  if (!product && isLoading) {
+    return (
+      <div className="min-h-screen">
+        <Header />
+      </div>
+    );
+  }
 
   if (!product) {
     return (
@@ -38,7 +60,7 @@ const Produto = () => {
     addToCart(product);
   };
 
-  const relatedProducts = products
+  const relatedProducts = catalog
     .filter(p => p.categoria === product.categoria && p.id !== product.id)
     .slice(0, 4);
 
@@ -59,7 +81,7 @@ const Produto = () => {
         <div className="grid gap-8 md:grid-cols-2">
           <div className="overflow-hidden rounded-2xl bg-muted">
             <img
-              src={product.imagem}
+              src={product.imagem ?? undefined}
               alt={product.nome}
               className="h-full w-full object-cover"
             />
@@ -95,7 +117,7 @@ const Produto = () => {
                 >
                   <div className="aspect-square overflow-hidden bg-muted">
                     <img
-                      src={relatedProduct.imagem}
+                      src={relatedProduct.imagem ?? undefined}
                       alt={relatedProduct.nome}
                       className="h-full w-full object-cover transition-transform hover:scale-105"
                     />
