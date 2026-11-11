@@ -27,8 +27,13 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const json = (body: unknown, status = 200) =>
-  new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+const json = (body: unknown, status = 200) => {
+  const result = body as Record<string, unknown>;
+  if (status >= 400 || result.skipped !== undefined) {
+    console.log("meta-capi retorno", JSON.stringify({ status, ...result }));
+  }
+  return new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+};
 
 const BROWSER_EVENTS = new Set(["ViewContent", "AddToCart", "InitiateCheckout", "AddPaymentInfo"]);
 const NON_PURCHASE_STATUSES = new Set(["aguardando_pagamento", "cancelado"]);
@@ -191,8 +196,8 @@ const sendToMeta = async (event: Record<string, unknown>) => {
     { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) },
   );
   const result = await res.json().catch(() => ({}));
-  if (!res.ok) console.error(`Meta CAPI ${event.event_name} erro`, JSON.stringify(result));
-  else console.log(`Meta CAPI ${event.event_name} ok`, JSON.stringify(result));
+  if (!res.ok) console.error(`Meta CAPI ${event.event_name} erro`, JSON.stringify({ pedido_id: event.event_id, result }));
+  else console.log(`Meta CAPI ${event.event_name} ok`, JSON.stringify({ pedido_id: event.event_id, result }));
   return { ok: res.ok, result };
 };
 
@@ -200,11 +205,18 @@ const sendPurchase = async (
   pedidoId: string,
   ctx: { fbp?: string | null; fbc?: string | null; user_agent?: string | null; client_ip?: string | null; event_source_url?: string | null },
   requesterUserId: string | null,
+  requireRecentAnonymous = false,
 ) => {
   const { data: pedido, error } = await admin.from("pedidos").select("*").eq("id", pedidoId).maybeSingle();
-  if (error || !pedido) return json({ error: "pedido_nao_encontrado" }, 404);
-  if (requesterUserId && pedido.user_id !== requesterUserId) return json({ error: "forbidden" }, 403);
-  if (NON_PURCHASE_STATUSES.has(String(pedido.status))) return json({ skipped: pedido.status });
+  if (error || !pedido) return json({ error: "pedido_nao_encontrado", pedido_id: pedidoId }, 404);
+  if (requesterUserId && pedido.user_id !== requesterUserId) return json({ error: "forbidden", pedido_id: pedidoId }, 403);
+  if (requireRecentAnonymous && !requesterUserId) {
+    const ageMs = Date.now() - new Date(pedido.created_at).getTime();
+    if (!Number.isFinite(ageMs) || ageMs < 0 || ageMs >= 30 * 60 * 1000) {
+      return json({ error: "unauthorized", pedido_id: pedidoId }, 401);
+    }
+  }
+  if (NON_PURCHASE_STATUSES.has(String(pedido.status))) return json({ skipped: pedido.status, pedido_id: pedidoId });
 
   const profile = await getProfile(pedido.user_id);
   const event = {
@@ -236,15 +248,18 @@ Deno.serve(async (req) => {
 
     const body = await req.json();
     const action = String(body.action ?? "");
+    console.log("meta-capi inicio", JSON.stringify({ action, pedido_id: body.pedido_id ?? null, userId_found: Boolean(userId) }));
 
     if (action === "purchase_server") {
-      if (!isServiceRole) return json({ error: "forbidden" }, 403);
+      if (!isServiceRole) return json({ error: "forbidden", pedido_id: body.pedido_id ?? null }, 403);
       return await sendPurchase(String(body.pedido_id), body, null);
     }
 
     if (action === "purchase") {
-      if (!userId) return json({ error: "unauthorized" }, 401);
-      return await sendPurchase(String(body.pedido_id), { ...body, client_ip: clientIp(req) }, userId);
+      if (typeof body.pedido_id !== "string" || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(body.pedido_id)) {
+        return json({ error: "pedido_id_invalido" }, 400);
+      }
+      return await sendPurchase(body.pedido_id, { ...body, client_ip: clientIp(req) }, userId, true);
     }
 
     if (action === "event") {
